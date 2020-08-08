@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Cool Server - uChat</title>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.0.13/js/solid.js"
+        integrity="sha384-tzzSw1/Vo+0N5UhStP3bvwWPq+uvzCMfrN1fEFe+xBmv1C/AtVX5K0uZtmcHitFZ"
+        crossorigin="anonymous"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.0.13/js/fontawesome.js"
+        integrity="sha384-6OIrr52G08NpOFSZdxxz1xdNSndlD4vdcf/q2myIUVO0VsqaGHJsB0RaBE01VTOY"
+        crossorigin="anonymous"></script>
+    <style>
+        ::-webkit-scrollbar {
+            height: 15px;
+            width: 15px;
+            border: 0px solid #2C2F33;
+        }
+
+        ::-webkit-scrollbar-track {
+            border-radius: 8px;
+            background: #636364;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            border-radius: 8px;
+            background: #2C2F33;
+        }
+
+        .group:hover {
+            filter: brightness(120%);
+        }
+
+        .message:hover {
+            filter: brightness(90%);
+        }
+
+        .user-icons:hover {
+            transform: scale(0.7);
+        }
+
+        .user-icons {
+            transition: transform .2s;
+        }
+
+        *:focus {
+            outline: 0;
+        }
+
+        button:active {
+            outline: none;
+        }
+
+        textarea:focus,
+        input:focus {
+            outline: 0;
+        }
+
+        input,
+        select,
+        textarea {
+            color: #fff !important;
+        }
+
+        form:focus,
+        input:focus,
+        textarea:focus {
+            color: #fff !important;
+        }
+
+        .loading-fullscreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            height: 100%;
+            width: 100%;
+            z-index: 99999999;
+        }
+
+        .loader {
+            margin: 0 0 2em;
+            height: 100px;
+            width: 20%;
+            text-align: center;
+            padding: 1em;
+            margin: 0 auto 1em;
+            display: inline-block;
+            vertical-align: top;
+        }
+
+        /*
+  Set the color of the icon
+*/
+        svg path,
+        svg rect {
+            fill: #fff;
+        }
+    </style>
+</head>
+
+<body
+    style="background-image: url(https://static.npmjs.com/attachments/ck3uwvv67mydydr74ea00ip4j-bg-stripes.png); background-repeat: no-repeat; background-attachment: fixed; background-size: cover; background-position: center;">
+    <div class="loading-fullscreen" style="background-color: #2C2F33;" id="loading-fullscreen">
+        <div class="loader loader--style2"
+            style="position: fixed; top: 50%; bottom: 50%; right: 5px; left: 5px; transform: scale(2);" title="1">
+            <svg version="1.1" id="loader-1" xmlns="http://www.w3.org/2000/svg"
+                xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="40px" height="40px"
+                viewBox="0 0 50 50" style="enable-background:new 0 0 50 50;" xml:space="preserve">
+                <path fill="#000"
+                    d="M25.251,6.461c-10.318,0-18.683,8.365-18.683,18.683h4.068c0-8.071,6.543-14.615,14.615-14.615V6.461z">
+                    <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 25 25"
+                        to="360 25 25" dur="0.6s" repeatCount="indefinite" />
+                </path>
+            </svg>
+        </div>
+    </div>
+    <div class="dms shadow-lg ml-4 mr-4 mb-4 mt-4 row flex-row flex-nowrap"
+        style="overflow-x: scroll; overflow-y: hidden; position: fixed; left: 2px; right: 2px; top: 2px; height: 170px;"
+        id="dms">
+    </div>
+    <div class="display-area container-fluid mb-4">
+        <div class="row">
+            <div class="messages col-sm-9 border-0 flex-row flex-nowrap overflow-y mh-25 rounded shadow-lg pb-2"
+                style="margin-bottom: 90px; overflow-y: scroll; overflow-x: hidden; top: 210px; bottom: 0; position: fixed;"
+                id="messages">
+            </div>
+            <!--
+            <div class="groups-list col-sm-3 mt-4 float-right border-0">
+                <div class="card mr-4 border-0" style="width: 100%">
+                    <div class="card-header text-light bg-dark border-0 shadow-lg py-3">
+                        <strong>Groups</strong>
+                    </div>
+                    <ul class="list-group list-group-flush text-light bg-dark border-0 shadow-lg rounded">
+                        <li class="group list-group-item text-light bg-dark border-0 rounded py-3">Maths</li>
+                        <li class="group list-group-item text-light bg-dark border-0 rounded py-3">Computer Science</li>
+                        <li class="group list-group-item text-light bg-dark border-0 rounded py-3">Physics</li>
+                        <li class="group list-group-item text-light bg-dark border-0 rounded py-3">English</li>
+                        <li class="group list-group-item text-light bg-dark border-0 rounded py-3">Chemistry</li>
+                        <li class="group list-group-item text-light bg-dark border-0 rounded py-3">Biology</li>
+                    </ul>
+                </div>
+            </div>
+        -->
+        </div>
+        <div class="container-fluid w-100 bg-dark border-0 shadow-lg" style="background-color: #2C2F33;">
+            <div class="user-input mr-4 ml-4 mb-3 fixed-bottom">
+                <div class="input-group input-group-lg rounded bg-dark border-0 shadow-lg" style="z-index: 1;">
+                    <form action="" style="width: 100%; height: 100%;" id="text_input_parent" autocomplete="off">
+                        <input type="text" class="user-input-box form-control bg-dark border-0 px-3 pt-4 pb-4 h-25"
+                            placeholder="Message someone" style="filter: brightness(150%);" aria-label="User input"
+                            aria-describedby="inputGroup-sizing-sm" id="text_input"
+                            style="color: #fff !important; width: 100%;">
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="modal_adddm" tabindex="-1" role="dialog"
+            style="background-color: rgba(0, 0, 0, 0.1)">
+            <div class="modal-dialog  modal-dialog-centered" role="document">
+                <div class="modal-content bg-dark">
+                    <div class="modal-header">
+                        <h4 class="modal-title text-center text-light">Create New DM</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form action="">
+                            <div class="form-group text-light" id="createdmpopupform">
+                                <label for="inputNewUserID">User ID</label>
+                                <input class="form-control" id="inputNewUserID" style="color: #000 !important;"
+                                    autocomplete="off">
+                            </div>
+                            <button type="submit" id="create_new_dm_submit" class="btn btn-primary">Submit</button>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default text-light" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="enlarge_image" class="modal fade" role="dialog" style="background-color: rgba(0, 0, 0, 0.1); max-width: 100%;">
+            <div class="modal-dialog  modal-dialog-centered" style="width: max-content; max-width: 100%;">
+                <img class="img-responsive" style="border-radius: 5px; display: flex; align-items: center; justify-content: center; max-width: 100%;" src="" />
+            </div>
+        </div>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            function isImage(url) {
+                console.log(url);
+                return (url.match(/\.(jpeg|jpg|gif|png)$/) != null);
+            }
+            function getImage(content) {
+                const tempURL = getURL(content);
+                if (tempURL != null) {
+                    for (let i = 0; i < tempURL.length; ++i) {
+                        console.log(tempURL[i]);
+                        console.log(isImage(tempURL[i]));
+                        if (isImage(tempURL[i])) {
+                            return tempURL[i];
+                        }
+                    }
+                }
+                return undefined;
+            }
+            function getURL(string) {
+                console.log(string);
+                return string.match(/\bhttps?:\/\/\S+/gi);
+            }
+            function addMessage(messageRaw, currentGroup) {
+                const message = messageRaw;
+                if (message.channel_id == localStorage.getItem('currentChannel')) {
+                    $('#nomessages').remove();
+                    if (currentGroup.authorID != message.author.id) {
+                        ++currentGroup.currentGrouping;
+                        currentGroup.authorID = message.author.id;
+                        $('#messages').append(`<span class="messages-grouped row" id="messages_grouping_${currentGroup.currentGrouping}"><span class="user-info row ml-4"><span class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4" style="width: 75px;" alt="100x100"src="${message.author.avatarURL}" data-holder-rendered="true"></span><h3 class="mt-4 ml-4 text-white">${message.author.username}</h3></span></span>`);
+                    }
+                    const image = getImage(message.content);
+                    const args = message.content.split(" ");
+                    for (let i = 0; i < args.length; ++i) {
+                        const url = getURL(args[i])
+                        if (url != null) {
+                            console.log(url);
+                            args[i] = args[i].replace(url[0], `<a href="${url}" target="_blank" class="text-primary">${url}</a>`)
+                        }
+                    }
+                    message.content = args.join(" ");
+                    console.log()
+                    $(`#messages_grouping_${currentGroup.currentGrouping}`).append(`<span class="card ml-4 mr-4 mt-4 w-100 border-0 message" id='${message.id}'>${message.author.id == localStorage.getItem('id') ? `<div style="position: absolute; right: 15px; background-color: #4c545d; border-radius: 5px; top: -20px; height: 40px;" class="px-2 py-2"><button onclick="deleteMessage('${message.id}')" style="background-color: rgba(0, 0, 0, 0); border: none; color: #fff;"><i class="fa fa-trash" aria-hidden="true"></i></button></div>` : ``}<div class="rounded card-body text-light bg-dark border-0 shadow-lg">${message.content}${image ? `<br><br><img loading="lazy" data-toggle="modal" data-target="#enlarge_image" src="${image}" style="border-radius: 4px; max-width: 90%; cursor: pointer;" id="${message.id}_imgembed" onclick="enlargeImage('${message.id}')">` : ''}</div></span>`);
+                    localStorage.setItem('grouping', JSON.stringify(currentGroup));
+                    document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+                }
+            }
+            const socket = io(undefined, {
+                transports: ['polling', 'websocket'],
+                transportOptions: {
+                    polling: {
+                        extraHeaders: {
+                            'authorisation': localStorage.getItem('id'),
+                            'focusedchannel': localStorage.getItem('currentChannel'),
+                            'channels': JSON.parse(localStorage.getItem('dms')).dms
+                        }
+                    }
+                }
+            });
+            if (!localStorage.getItem('id')) {
+                window.location.href = '/login';
+            }
+            $(function () {
+                $('#text_input').focus();
+                $('form').submit(function (e) {
+                    e.preventDefault(); // prevents page reloading
+                    if (!$('#text_input').val() || $('#text_input').val() == '') return;
+                    socket.emit('message', {
+                        content: $('#text_input').val(),
+                        author: localStorage.getItem("id"),
+                        channel: localStorage.getItem("currentChannel")
+                    });
+                    $('#text_input').val('');
+                    $('#text_input').focus();
+                    return false;
+                });
+                socket.on('message', message => {
+                    console.log(message);
+                    let relevantChannel = JSON.parse(localStorage.getItem(message.channel_id));
+                    if (!relevantChannel || relevantChannel == null) {
+                        let toSet = {
+                            messages: []
+                        };
+                        toSet.messages[0] = message;
+                        localStorage.setItem(message.channel_id, JSON.stringify(toSet));
+                    } else {
+                        relevantChannel.messages.push(message);
+                        localStorage.setItem(message.channel_id, JSON.stringify(relevantChannel));
+                    }
+                    addMessage(message, JSON.parse(localStorage.getItem('grouping')));
+                });
+                socket.on('messageDeleted', message => {
+                    console.log(message);
+                    //NEED TO INCREASE CURRENT GROUPING BY ONE
+                    if (localStorage.getItem('currentChannel') == message.channel) {
+                        console.log($(`#${message.id}`).attr('id'));
+                        console.log($(`#${message.id}`).parent().attr('id'));
+                        const parent_id = $(`#${message.id}`).parent().attr('id');
+                        console.log(parent_id);
+                        console.log($(`#${parent_id}`).children().length);
+                        if ($(`#${parent_id}`).children().length == 2) {
+                            $(`#${parent_id}`).remove();
+                        }
+                        $(`#${message.id}`).remove();
+                        if ($('#messages').children().length == 0) {
+                            noMessages();
+                        }
+                    }
+                    const infos = JSON.parse(localStorage.getItem(message.channel));
+                    for (let i = 0; i < infos.messages.length; ++i) {
+                        if (infos.messages[i].id == message.id) {
+                            infos.messages.splice(i, 1);
+                        }
+                        localStorage.setItem(message.channel, JSON.stringify(infos));
+                    }
+                });
+                getDMChannels();
+                fetchMessages(true);
+                $('#create_new_dm_submit').click(() => {
+                    console.log($('#inputNewUserID').val());
+                    $.post('/create-channel', { "type": 1, "to": $('#inputNewUserID').val(), "from": localStorage.getItem('id') }, data => {
+                        console.log(localStorage.getItem('dms'));
+                        $('#dmcreatepopuperror').remove();
+                        if (data.channel_id == null) return $('#createdmpopupform').append('<div class="alert alert-danger mt-4" id="dmcreatepopuperror" role="alert">Oopise, something happened. Check if you already have a DM with this user, or that the user ID you entered is correct.</div>');
+                        let DMS = JSON.parse(localStorage.getItem('dms'));
+                        DMS.dms.push(data.channel_id.toString());
+                        localStorage.setItem('dms', JSON.stringify(DMS));
+                        getDMChannels();
+                        $('#modal_adddm').modal('hide');
+                    });
+                });
+            });
+            function deleteMessage(message_id) {
+                socket.emit('messageDeleted', {
+                    id: message_id,
+                    channel: localStorage.getItem("currentChannel")
+                });
+            }
+            function changeDM(channel_id) {
+                $('#messages').empty();
+                $(`#${localStorage.getItem('currentChannel')}`).css('transform', '');
+                localStorage.setItem('currentChannel', channel_id);
+                $(`#${localStorage.getItem('currentChannel')}`).css('transform', 'scale(0.7)');
+                fetchMessages();
+            }
+            function fetchMessages(startup) {
+                const currentGroup = {
+                    authorID: undefined,
+                    currentGrouping: 0
+                };
+                localStorage.setItem('grouping', JSON.stringify(currentGroup));
+                if (startup || !localStorage.getItem(localStorage.getItem('currentChannel')) || JSON.parse(localStorage.getItem(localStorage.getItem('currentChannel'))).messages.length == 0) {
+                    $.get('/messages', { "channel_id": localStorage.getItem('currentChannel'), "self_id": localStorage.getItem('id') }, data => {
+                        console.log(data);
+                        $('#text_input').attr('placeholder', `Message ${data.channel.name}`);
+                        $(`#${localStorage.getItem('currentChannel')}`).css('transform', 'scale(0.7)');
+                        let cnt = 0;
+                        localStorage.setItem(localStorage.getItem('currentChannel'), JSON.stringify({ messages: data.messages, channel: data.channel }))
+                        for (const message of data.messages) {
+                            ++cnt;
+                            addMessage(message, JSON.parse(localStorage.getItem('grouping')));
+                        }
+                        if (cnt == 0) {
+                            noMessages();
+                        }
+                        $('#loading-fullscreen').remove();
+                    });
+                } else {
+                    console.log("fetching locally");
+                    console.log(JSON.parse(localStorage.getItem(localStorage.getItem('currentChannel'))).messages);
+                    let cnt = 0;
+                    $('#text_input').attr('placeholder', `Message ${JSON.parse(localStorage.getItem(localStorage.getItem('currentChannel'))).channel.name}`);
+                    for (const message of JSON.parse(localStorage.getItem(localStorage.getItem('currentChannel'))).messages) {
+                        ++cnt;
+                        console.log(message);
+                        addMessage(message, JSON.parse(localStorage.getItem('grouping')));
+                    }
+                    if (cnt == 0) {
+                        noMessages();
+                    }
+                }
+            }
+            function getDMChannels() {
+                $.get('/dmchannels', { "channels": (JSON.parse(localStorage.getItem('dms')).dms), "self_id": localStorage.getItem('id') }, data => {
+                    console.log(data);
+                    $('#dms').empty();
+                    for (const element of data.dmchannels) {
+                        $('#dms').append(`<span id="${element.channel_id}" onclick="changeDM('${element.channel_id}')" class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4" style="width: 128px;" alt="100x100"src="${element.user.avatarURL}" data-holder-rendered="true"></span>`)
+                    }
+                    $('#dms').append(`<span id="0" class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4" style="width: 128px;"alt="100x100" src="https://image.flaticon.com/icons/svg/32/32360.svg"data-holder-rendered="true"></span>`)
+                    $(`#${localStorage.getItem('currentChannel')}`).css('transform', 'scale(0.7)');
+                    $('#0').click(() => {
+                        console.log("Add DM modal");
+                        $('#modal_adddm').modal('show');
+                    });
+                });
+            }
+            function noMessages() {
+                $('#messages').append('<span class="text-center mx-auto mt-4" id="nomessages"><h3 class="text-center mx-auto text-light mt-4">No messages here yet :(</h3></span>');
+            }
+            function enlargeImage(id) {
+                console.log("YES");
+                const image = $(`#${id}_imgembed`).attr('src');
+                console.log($(`#${id}_imgembed`).attr('id'));
+                console.log(image);
+                $('#enlarge_image').on('show.bs.modal', function () {
+                    $(".img-responsive").attr("src", image);
+                });
+            }
+        </script>
+</body>
+
+</html>
