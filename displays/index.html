@@ -58,7 +58,14 @@
 
         textarea:focus,
         input:focus {
-            outline: 0;
+            outline: none;
+            border: none;
+        }
+
+        .form-control:focus {
+            border-color: #cccccc;
+            -webkit-box-shadow: none;
+            box-shadow: none;
         }
 
         input,
@@ -73,7 +80,8 @@
             color: #fff !important;
         }
 
-        .loading-fullscreen {
+        .loading-fullscreen,
+        .settings-fullscreen {
             position: absolute;
             top: 0;
             left: 0;
@@ -102,6 +110,25 @@
         svg rect {
             fill: #fff;
         }
+
+        .settings-button-parent:hover,
+        .info-button-parent:hover,
+        .bots-button-parent:hover {
+            filter: brightness(120%);
+        }
+
+        .btn-circle.btn-xl {
+            width: 70px;
+            height: 70px;
+            padding: 10px 16px;
+            border-radius: 35px;
+            font-size: 24px;
+            line-height: 1.33;
+            left: 5px;
+            top: 5px;
+            position: fixed;
+            transform: scale(0.7);
+        }
     </style>
 </head>
 
@@ -121,6 +148,8 @@
             </svg>
         </div>
     </div>
+    <span id="settings-placeholder">
+    </span>
     <div class="dms shadow-lg ml-4 mr-4 mb-4 mt-4 row flex-row flex-nowrap"
         style="overflow-x: scroll; overflow-y: hidden; position: fixed; left: 2px; right: 2px; top: 2px; height: 170px;"
         id="dms">
@@ -150,7 +179,7 @@
         -->
         </div>
         <div class="container-fluid w-100 bg-dark border-0 shadow-lg" style="background-color: #2C2F33;">
-            <div class="user-input mr-4 ml-4 mb-3 fixed-bottom">
+            <div class="user-input mr-4 ml-2 mb-3 fixed-bottom col-sm-9">
                 <div class="input-group input-group-lg rounded bg-dark border-0 shadow-lg" style="z-index: 1;">
                     <form action="" style="width: 100%; height: 100%;" id="text_input_parent" autocomplete="off">
                         <input type="text" class="user-input-box form-control bg-dark border-0 px-3 pt-4 pb-4 h-25"
@@ -158,6 +187,29 @@
                             aria-describedby="inputGroup-sizing-sm" id="text_input"
                             style="color: #fff !important; width: 100%;">
                     </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3 mb-3" style="position: fixed; bottom: 0px; right: 23px;"
+            style="background-color: #2C2F33;">
+            <div class="input-group input-group-lg rounded bg-dark border-0 shadow-lg" style="border-radius: 10px;">
+                <div class="settings-button-parent bg-dark">
+                    <button class="settings-button px-2 py-3" id="settings-button"
+                        style="background-color: rgba(0, 0, 0, 0); border: none;">
+                        <i class="fa fa-cog fa-2x" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="info-button-parent bg-dark">
+                    <button class="info-button px-2 py-3" id="info-button"
+                        style="background-color: rgba(0, 0, 0, 0); border: none;">
+                        <i class="fa fa-info-circle fa-2x" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="info-button-parent bg-dark">
+                    <button class="info-button px-2 py-3" id="info-button"
+                        style="background-color: rgba(0, 0, 0, 0); border: none;">
+                        <i class="fa fa-server fa-2x" aria-hidden="true"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -184,16 +236,18 @@
                 </div>
             </div>
         </div>
-        <div id="enlarge_image" class="modal fade" role="dialog" style="background-color: rgba(0, 0, 0, 0.1); max-width: 100%;">
+        <div id="enlarge_image" class="modal fade" role="dialog"
+            style="background-color: rgba(0, 0, 0, 0.1); max-width: 100%;">
             <div class="modal-dialog  modal-dialog-centered" style="width: max-content; max-width: 100%;">
-                <img class="img-responsive" style="border-radius: 5px; display: flex; align-items: center; justify-content: center; max-width: 100%;" src="" />
+                <img class="img-responsive"
+                    style="border-radius: 5px; display: flex; align-items: center; justify-content: center; max-width: 100%;"
+                    src="" />
             </div>
         </div>
         <script src="/socket.io/socket.io.js"></script>
         <script>
             function isImage(url) {
-                console.log(url);
-                return (url.match(/\.(jpeg|jpg|gif|png)$/) != null);
+                return ((url.includes('jpeg') || url.includes('jpg') || url.includes('gif') || url.includes('png')) != null);
             }
             function getImage(content) {
                 const tempURL = getURL(content);
@@ -230,12 +284,17 @@
                             args[i] = args[i].replace(url[0], `<a href="${url}" target="_blank" class="text-primary">${url}</a>`)
                         }
                     }
+                    args[0] = args[0].replace('/tableflip', '(╯°□°）╯︵ ┻━┻');
+                    args[0] = args[0].replace('/shrug', '¯\\_(ツ)_/¯');
+                    args[0] = args[0].replace('/unflip', '┬─┬ ノ( ゜-゜ノ)');
                     message.content = args.join(" ");
-                    console.log()
                     $(`#messages_grouping_${currentGroup.currentGrouping}`).append(`<span class="card ml-4 mr-4 mt-4 w-100 border-0 message" id='${message.id}'>${message.author.id == localStorage.getItem('id') ? `<div style="position: absolute; right: 15px; background-color: #4c545d; border-radius: 5px; top: -20px; height: 40px;" class="px-2 py-2"><button onclick="deleteMessage('${message.id}')" style="background-color: rgba(0, 0, 0, 0); border: none; color: #fff;"><i class="fa fa-trash" aria-hidden="true"></i></button></div>` : ``}<div class="rounded card-body text-light bg-dark border-0 shadow-lg">${message.content}${image ? `<br><br><img loading="lazy" data-toggle="modal" data-target="#enlarge_image" src="${image}" style="border-radius: 4px; max-width: 90%; cursor: pointer;" id="${message.id}_imgembed" onclick="enlargeImage('${message.id}')">` : ''}</div></span>`);
                     localStorage.setItem('grouping', JSON.stringify(currentGroup));
                     document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
                 }
+            }
+            if (!localStorage.getItem('id')) {
+                window.location.href = '/login';
             }
             const socket = io(undefined, {
                 transports: ['polling', 'websocket'],
@@ -249,9 +308,6 @@
                     }
                 }
             });
-            if (!localStorage.getItem('id')) {
-                window.location.href = '/login';
-            }
             $(function () {
                 $('#text_input').focus();
                 $('form').submit(function (e) {
@@ -292,6 +348,9 @@
                         console.log($(`#${parent_id}`).children().length);
                         if ($(`#${parent_id}`).children().length == 2) {
                             $(`#${parent_id}`).remove();
+                            const currGrouping = JSON.parse(localStorage.getItem('grouping'));
+                            currGrouping.authorID = undefined;
+                            localStorage.setItem('grouping', JSON.stringify(currGrouping));
                         }
                         $(`#${message.id}`).remove();
                         if ($('#messages').children().length == 0) {
@@ -319,6 +378,25 @@
                         localStorage.setItem('dms', JSON.stringify(DMS));
                         getDMChannels();
                         $('#modal_adddm').modal('hide');
+                    });
+                });
+            });
+            function getSelf(callback) {
+                const selfLC = localStorage.getItem('self');
+                if (selfLC) {
+                    return callback(JSON.parse(selfLC));
+                } else {
+                    $.get('/users', { users: [localStorage.getItem('id')] }, data => {
+                        localStorage.setItem('self', JSON.stringify(data[0]));
+                        return callback(data[0]);
+                    });
+                }
+            }
+            $('#settings-button').click(() => {
+                getSelf(self => {
+                    $('#settings-placeholder').append(`<div class="settings-fullscreen" style="background-color: #2C2F33;" id="settings-fullscreen"><button type="button" id="close-settings" class="btn btn-secondary btn-circle btn-xl shadow-lg"><i class="fa fa-times"></i></button><div class="account-settings-outline"style="position: fixed; left: 50px; right: 50px; top: 80px; background-color: #575c64; border-radius: 10px;"><h3 class="ml-4 mt-3 text-light">Account</h3><span class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4"style="width: 128px;" alt="100x100"src="${self.avatarURL}"data-holder-rendered="true"></span><div class="form-group ml-4 mr-4 mt-4"><label for="userNameField" class="text-light">Username</label><input class="form-control text-dark" id="userNameField" value="${self.username}"></div><div class="form-group ml-4 mr-4 mt-4"><label for="avatarURLField" class="text-light">Avatar URL</label><input class="form-control text-dark" id="avatarURLField" value="${self.avatarURL}"></div><button class="btn btn-danger float-left ml-4 mb-3 mt-2">Delete Account</button><button class="btn btn-primary float-right mr-4 mb-3 mt-2">Save</button></div></div>`);
+                    $('#close-settings').click(() => {
+                        $('#settings-fullscreen').remove();
                     });
                 });
             });
