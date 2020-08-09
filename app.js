@@ -30,8 +30,7 @@ app.post('/new', async (req, res) => {
         });
         newUser.save();
     } else {
-        console.log((await channels.find({ between: { $in: user.id } })));
-        const channelList = (await channels.find({ between: { $in: user.id } }));
+        const channelList = (await channels.find({ between: { $in: user.id } })).lean(true);
         res.send({ id: user.id, dms: channelList.map(channel => { return channel.id }) });
     }
 });
@@ -45,7 +44,7 @@ app.get('/users', (req, res) => {
             if (err) return res.send([]);
             if (!data) return res.send([]);
             res.send(data);
-        });
+        }).lean(true);
 });
 
 app.post('/create-channel', (req, res) => {
@@ -56,7 +55,7 @@ app.post('/create-channel', (req, res) => {
             between: req.body.to
         },
             async (err, data) => {
-                if (!data && req.body.to != req.body.from && (await users.findOne({ id: req.body.to }))) {
+                if (!data && req.body.to != req.body.from && (await users.findOne({ id: req.body.to })).lean(true)) {
                     const channel_id = new Date().getTime();
                     const newChannel = new channels({
                         _id: mongoose.Types.ObjectId(),
@@ -80,7 +79,7 @@ app.get('/messages', (req, res) => {
         id: req.query.channel_id
     },
         async (err, data) => {
-            const usersInvolved = await users.find({ id: { $in: data.between } });
+            const usersInvolved = await users.find({ id: { $in: data.between } }).lean(true);
             const send = {
                 messages: [],
                 channel: {
@@ -122,7 +121,7 @@ app.get('/dmchannels', (req, res) => {
             for (let i = 0; i < datas.length; ++i) {
                 const data = datas[i];
                 const user_id = (data.between.filter(val => { return val != req.query.self_id }))[0];
-                const user = await users.findOne({ id: user_id });
+                const user = await users.findOne({ id: user_id }).lean(true);
                 console.log(user);
                 toReturn.push({ user, channel_id: data.id });
                 console.log(req.query.channels.length);
@@ -132,7 +131,7 @@ app.get('/dmchannels', (req, res) => {
                     res.send({ dmchannels: toReturn });
                 }
             }
-        }).select({ between: 1, id: 1 });
+        }).select({ between: 1, id: 1 }).lean(true);
 });
 
 io.on('connection', socket => {
