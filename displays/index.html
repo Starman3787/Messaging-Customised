@@ -46,6 +46,7 @@
 
         .user-icons {
             transition: transform .2s;
+            object-fit: cover;
         }
 
         *:focus {
@@ -128,6 +129,14 @@
             top: 5px;
             position: fixed;
             transform: scale(0.7);
+        }
+
+        .userNameField:focus {
+            color: #000 !important;
+        }
+
+        .avatarURLField:focus {
+            color: #000 !important;
         }
     </style>
 </head>
@@ -273,7 +282,7 @@
                     if (currentGroup.authorID != message.author.id) {
                         ++currentGroup.currentGrouping;
                         currentGroup.authorID = message.author.id;
-                        $('#messages').append(`<span class="messages-grouped row" id="messages_grouping_${currentGroup.currentGrouping}"><span class="user-info row ml-4"><span class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4" style="width: 75px;" alt="100x100"src="${message.author.avatarURL}" data-holder-rendered="true"></span><h3 class="mt-4 ml-4 text-white">${message.author.username}</h3></span></span>`);
+                        $('#messages').append(`<span class="messages-grouped row" id="messages_grouping_${currentGroup.currentGrouping}"><span class="user-info row ml-4"><div class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4" style="width: 75px; height: 75px;" alt="100x100"src="${message.author.avatarURL}" data-holder-rendered="true"></div><h3 class="mt-4 ml-4 text-white">${message.author.username}</h3></span></span>`);
                     }
                     const image = getImage(message.content);
                     const args = message.content.split(" ");
@@ -394,9 +403,27 @@
             }
             $('#settings-button').click(() => {
                 getSelf(self => {
-                    $('#settings-placeholder').append(`<div class="settings-fullscreen" style="background-color: #2C2F33;" id="settings-fullscreen"><button type="button" id="close-settings" class="btn btn-secondary btn-circle btn-xl shadow-lg"><i class="fa fa-times"></i></button><div class="account-settings-outline"style="position: fixed; left: 50px; right: 50px; top: 80px; background-color: #575c64; border-radius: 10px;"><h3 class="ml-4 mt-3 text-light">Account</h3><span class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4"style="width: 128px;" alt="100x100"src="${self.avatarURL}"data-holder-rendered="true"></span><div class="form-group ml-4 mr-4 mt-4"><label for="userNameField" class="text-light">Username</label><input class="form-control text-dark" id="userNameField" value="${self.username}"></div><div class="form-group ml-4 mr-4 mt-4"><label for="avatarURLField" class="text-light">Avatar URL</label><input class="form-control text-dark" id="avatarURLField" value="${self.avatarURL}"></div><button class="btn btn-danger float-left ml-4 mb-3 mt-2">Delete Account</button><button class="btn btn-primary float-right mr-4 mb-3 mt-2">Save</button></div></div>`);
+                    $('#settings-placeholder').append(`<div class="settings-fullscreen" style="background-color: #2C2F33;" id="settings-fullscreen"><button type="button" id="close-settings" class="btn btn-secondary btn-circle btn-xl shadow-lg"><i class="fa fa-times"></i></button><div class="account-settings-outline"style="position: fixed; left: 50px; right: 50px; top: 80px; background-color: #575c64; border-radius: 10px;"><h3 class="ml-4 mt-3 text-light">Account</h3><span class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4" style="width: 128px; height: 128px;" alt="100x100"src="${self.avatarURL}"data-holder-rendered="true" id="settings-avatar-display"></span><div class="form-group ml-4 mr-4 mt-4"><label for="userNameField" class="text-light">Username</label><input class="form-control text-dark userNameField" id="userNameField" value="${self.username}"></div><div class="form-group ml-4 mr-4 mt-4"><label for="avatarURLField" class="text-light">Avatar URL</label><input class="form-control text-dark avatarURLField" id="avatarURLField" value="${self.avatarURL}"></div><div id="error-message-settings"></div><button class="btn btn-danger float-left ml-4 mb-3 mt-2">Delete Account</button><button class="btn btn-primary float-right mr-4 mb-3 mt-2" id="save-account-settings">Save</button></div></div>`);
                     $('#close-settings').click(() => {
                         $('#settings-fullscreen').remove();
+                    });
+                    $('#save-account-settings').click(() => {
+                        if ($('#userNameField').val() == JSON.parse(localStorage.getItem('self')).username && $('#avatarURLField').val() == JSON.parse(localStorage.getItem('self')).avatarURL) {
+                            $('#error-message-settings').append('<div class="alert alert-danger ml-4 mr-4" role="alert">Well that was a bit silly! You should change the settings before saving.</div>');
+                            return;
+                        }
+                        $.post('/update-account', {self_id: localStorage.getItem('id'), username: $('#userNameField').val(), avatarURL: $('#avatarURLField').val()}, data => {
+                            $('#error-message-settings').empty();
+                            if (data == null) {
+                                $('#error-message-settings').append('<div class="alert alert-danger ml-4 mr-4" role="alert">Well that was a bit silly! You should change the settings before saving.</div>');
+                            } else {
+                                localStorage.setItem('self', JSON.stringify({id: data.id, username: data.username, avatarURL: data.avatarURL}));
+                                $('#userNameField').val(data.username);
+                                $('avatarURLField').val(data.avatarURL);
+                                $('#settings-avatar-display').attr('src', data.avatarURL);
+                                $('#error-message-settings').append('<div class="alert alert-success ml-4 mr-4" role="alert">Account settings updated!</div>');
+                            }
+                        });
                     });
                 });
             });
