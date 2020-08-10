@@ -35,6 +35,25 @@ app.post('/new', async (req, res) => {
     }
 });
 
+app.post('/update-account', (req, res) => {
+    users.findOne({
+        id: req.body.self_id
+    },
+    (err, data) => {
+        if (req.body.username == data.username && req.body.avatarURL == data.avatarURL) {
+            res.send(null);
+        } else {
+            if (req.body.username != data.username) {
+                data.username = req.body.username;
+            } else {
+                data.avatarURL = req.body.avatarURL;
+            }
+            data.save();
+            res.send({id: req.body.self_id, username: req.body.username, avatarURL: req.body.avatarURL});
+        }
+    });
+});
+
 app.get('/users', (req, res) => {
     console.log(req.query.users);
     users.find({
