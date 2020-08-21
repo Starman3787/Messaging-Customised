@@ -1,3 +1,3 @@
 # Messaging-Customised
 
-Just a very simple messaging platform for a school projects.
+Just a very simple messaging platform for a school project.
