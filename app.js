@@ -30,7 +30,7 @@ app.post('/new', async (req, res) => {
         });
         newUser.save();
     } else {
-        const channelList = (await channels.find({ between: { $in: user.id } })).lean(true);
+        const channelList = await channels.find({ between: { $in: user.id } }).lean(true);
         res.send({ id: user.id, dms: channelList.map(channel => { return channel.id }) });
     }
 });
