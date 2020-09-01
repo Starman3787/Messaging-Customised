@@ -82,7 +82,8 @@
         }
 
         .loading-fullscreen,
-        .settings-fullscreen {
+        .settings-fullscreen,
+        .info-fullscreen {
             position: absolute;
             top: 0;
             left: 0;
@@ -138,11 +139,15 @@
         .avatarURLField:focus {
             color: #000 !important;
         }
+
+        body {
+            background-image: url(https://static.npmjs.com/attachments/ck3uwvv67mydydr74ea00ip4j-bg-stripes.png);
+        }
     </style>
 </head>
 
 <body
-    style="background-image: url(https://static.npmjs.com/attachments/ck3uwvv67mydydr74ea00ip4j-bg-stripes.png); background-repeat: no-repeat; background-attachment: fixed; background-size: cover; background-position: center;">
+    style="background-repeat: no-repeat; background-attachment: fixed; background-size: cover; background-position: center;">
     <div class="loading-fullscreen" style="background-color: #2C2F33;" id="loading-fullscreen">
         <div class="loader loader--style2"
             style="position: fixed; top: 50%; bottom: 50%; right: 5px; left: 5px; transform: scale(2);" title="1">
@@ -159,14 +164,16 @@
     </div>
     <span id="settings-placeholder">
     </span>
+    <span id="info-placeholder">
+    </span>
     <div class="dms shadow-lg ml-4 mr-4 mb-4 mt-4 row flex-row flex-nowrap"
         style="overflow-x: scroll; overflow-y: hidden; position: fixed; left: 2px; right: 2px; top: 2px; height: 170px;"
         id="dms">
     </div>
     <div class="display-area container-fluid mb-4">
         <div class="row">
-            <div class="messages col-sm-9 border-0 flex-row flex-nowrap overflow-y mh-25 rounded shadow-lg pb-2"
-                style="margin-bottom: 90px; overflow-y: scroll; overflow-x: hidden; top: 210px; bottom: 0; position: fixed;"
+            <div class="messages border-0 flex-row flex-nowrap overflow-y mh-25 rounded shadow-lg pb-2"
+                style="margin-bottom: 90px; overflow-y: scroll; overflow-x: hidden; top: 210px; bottom: 0; left: 10px; right: 55px; position: fixed;"
                 id="messages">
             </div>
             <!--
@@ -188,7 +195,7 @@
         -->
         </div>
         <div class="container-fluid w-100 bg-dark border-0 shadow-lg" style="background-color: #2C2F33;">
-            <div class="user-input mr-4 ml-2 mb-3 fixed-bottom col-sm-9">
+            <div class="user-input mr-4 ml-2 mb-3 fixed-bottom" style="right: 32px;">
                 <div class="input-group input-group-lg rounded bg-dark border-0 shadow-lg" style="z-index: 1;">
                     <form action="" style="width: 100%; height: 100%;" id="text_input_parent" autocomplete="off">
                         <input type="text" class="user-input-box form-control bg-dark border-0 px-3 pt-4 pb-4 h-25"
@@ -199,8 +206,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-3 mb-3" style="position: fixed; bottom: 0px; right: 23px;"
-            style="background-color: #2C2F33;">
+        <div class="mb-3"
+            style="position: fixed; bottom: 70px; right: 17px; width: 30px; border-radius: 10px; background-color: #2C2F33;">
             <div class="input-group input-group-lg rounded bg-dark border-0 shadow-lg" style="border-radius: 10px;">
                 <div class="settings-button-parent bg-dark">
                     <button class="settings-button px-2 py-3" id="settings-button"
@@ -249,8 +256,7 @@
             style="background-color: rgba(0, 0, 0, 0.1); max-width: 100%;">
             <div class="modal-dialog  modal-dialog-centered" style="width: max-content; max-width: 100%;">
                 <img class="img-responsive"
-                    style="border-radius: 5px; display: flex; align-items: center; justify-content: center; max-width: 100%;"
-                    src="" />
+                    style="display: flex; align-items: center; justify-content: center; max-width: 100%;" src="" />
             </div>
         </div>
         <script src="/socket.io/socket.io.js"></script>
@@ -318,6 +324,9 @@
                 }
             });
             $(function () {
+                if (localStorage.getItem('customSettings')) {
+                    $('body').css('background-image', `url(${JSON.parse(localStorage.getItem('customSettings')).background.replace(/"/g, '')})`);
+                }
                 $('#text_input').focus();
                 $('form').submit(function (e) {
                     e.preventDefault(); // prevents page reloading
@@ -401,30 +410,67 @@
                     });
                 }
             }
-            $('#settings-button').click(() => {
+            $('#info-button').click(() => {
                 getSelf(self => {
-                    $('#settings-placeholder').append(`<div class="settings-fullscreen" style="background-color: #2C2F33;" id="settings-fullscreen"><button type="button" id="close-settings" class="btn btn-secondary btn-circle btn-xl shadow-lg"><i class="fa fa-times"></i></button><div class="account-settings-outline"style="position: fixed; left: 50px; right: 50px; top: 80px; background-color: #575c64; border-radius: 10px;"><h3 class="ml-4 mt-3 text-light">Account</h3><span class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4" style="width: 128px; height: 128px;" alt="100x100"src="${self.avatarURL}"data-holder-rendered="true" id="settings-avatar-display"></span><div class="form-group ml-4 mr-4 mt-4"><label for="userNameField" class="text-light">Username</label><input class="form-control text-dark userNameField" id="userNameField" value="${self.username}"></div><div class="form-group ml-4 mr-4 mt-4"><label for="avatarURLField" class="text-light">Avatar URL</label><input class="form-control text-dark avatarURLField" id="avatarURLField" value="${self.avatarURL}"></div><div id="error-message-settings"></div><button class="btn btn-danger float-left ml-4 mb-3 mt-2">Delete Account</button><button class="btn btn-primary float-right mr-4 mb-3 mt-2" id="save-account-settings">Save</button></div></div>`);
-                    $('#close-settings').click(() => {
-                        $('#settings-fullscreen').remove();
+                    $('#settings-placeholder').append(`<div class="info-fullscreen" style="background-color: #2C2F33;" id="info-fullscreen"><button type="button" id="close-info" class="btn btn-secondary btn-circle btn-xl shadow-lg"><i class="fa fa-times"></i></button><div class="account-info-outline"style="position: fixed; left: 50px; right: 50px; top: 80px; background-color: #575c64; border-radius: 10px;"><h3 class="ml-4 mt-3 text-light">Account</h3><span class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4" style="width: 128px; height: 128px;" alt="100x100"src="${self.avatarURL}"data-holder-rendered="true" id="info-avatar-display"></span><div class="form-group ml-4 mr-4 mt-4"><label for="userNameField" class="text-light">Username</label><input class="form-control text-dark userNameField" id="userNameField" value="${self.username}"></div><div class="form-group ml-4 mr-4 mt-4"><label for="avatarURLField" class="text-light">Avatar URL</label><input class="form-control text-dark avatarURLField" id="avatarURLField" value="${self.avatarURL}"></div><div id="error-message-info"></div><button class="btn btn-danger float-left ml-4 mb-3 mt-2">Delete Account</button><button class="btn btn-primary float-right mr-4 mb-3 mt-2" id="save-account-info">Save</button></div>     <div class="account-info-outline"style="position: fixed; left: 50px; right: 50px; bottom: 50px; background-color: #575c64; border-radius: 10px;"><h3 class="ml-4 mt-3 mb-4 text-light">Info</h3> <span class="ml-4 mr-4 mb-4 mt-4"><label for="info-account-id" class="text-light">Account ID</label><div class="rounded ml-4 mr-4 mb-4 px-2 py-2" style="background-color: #8a9099" id="info-account-id">${localStorage.getItem('id')}</div></span> </div>`);
+                    $('#close-info').click(() => {
+                        $('#info-fullscreen').remove();
                     });
-                    $('#save-account-settings').click(() => {
+                    $('#save-account-info').click(() => {
                         if ($('#userNameField').val() == JSON.parse(localStorage.getItem('self')).username && $('#avatarURLField').val() == JSON.parse(localStorage.getItem('self')).avatarURL) {
-                            $('#error-message-settings').append('<div class="alert alert-danger ml-4 mr-4" role="alert">Well that was a bit silly! You should change the settings before saving.</div>');
+                            $('#error-message-info').append('<div class="alert alert-danger ml-4 mr-4" role="alert">Well that was a bit silly! You should change your information before saving.</div>');
                             return;
                         }
-                        $.post('/update-account', {self_id: localStorage.getItem('id'), username: $('#userNameField').val(), avatarURL: $('#avatarURLField').val()}, data => {
-                            $('#error-message-settings').empty();
+                        $.post('/update-account', { self_id: localStorage.getItem('id'), username: $('#userNameField').val(), avatarURL: $('#avatarURLField').val() }, data => {
+                            $('#error-message-info').empty();
                             if (data == null) {
-                                $('#error-message-settings').append('<div class="alert alert-danger ml-4 mr-4" role="alert">Well that was a bit silly! You should change the settings before saving.</div>');
+                                $('#error-message-info').append('<div class="alert alert-danger ml-4 mr-4" role="alert">Well that was a bit silly! You should change your information before saving.</div>');
                             } else {
-                                localStorage.setItem('self', JSON.stringify({id: data.id, username: data.username, avatarURL: data.avatarURL}));
+                                localStorage.setItem('self', JSON.stringify({ id: data.id, username: data.username, avatarURL: data.avatarURL }));
                                 $('#userNameField').val(data.username);
                                 $('avatarURLField').val(data.avatarURL);
-                                $('#settings-avatar-display').attr('src', data.avatarURL);
-                                $('#error-message-settings').append('<div class="alert alert-success ml-4 mr-4" role="alert">Account settings updated!</div>');
+                                $('#info-avatar-display').attr('src', data.avatarURL);
+                                $('#error-message-info').append('<div class="alert alert-success ml-4 mr-4" role="alert">Account info updated!</div>');
                             }
                         });
                     });
+                });
+            });
+            $('#settings-button').click(() => {
+                const customSettings = JSON.parse(localStorage.getItem('customSettings'));
+                $('#settings-placeholder').append(`<div class="settings-fullscreen" style="background-color: #2C2F33;" id="settings-fullscreen"><button type="button" id="close-settings" class="btn btn-secondary btn-circle btn-xl shadow-lg"><i class="fa fa-times"></i></button><div class="account-settings-outline"style="position: fixed; left: 50px; right: 50px; top: 80px; background-color: #575c64; border-radius: 10px;"><h3 class="ml-4 mt-3 text-light">Customisation</h3><span class="user-icons ml-4"><label for="settings-background-display" class="text-light mt-4">Background</label><br><img loading="lazy" class="rounded shadow-lg mb-2 mr-4 ml-4" style="width: 192px; height: 108px;" alt="100x100" src="${(customSettings && customSettings.background) ? customSettings.background : "https://static.npmjs.com/attachments/ck3uwvv67mydydr74ea00ip4j-bg-stripes.png"}" data-holder-rendered="true" id="settings-background-display"></span><div class="form-group ml-4 mr-4 mt-4"><label for="backgroundURLField" class="text-light">Background URL</label><input class="form-control text-dark userNameField" id="backgroundURLField" value="${(customSettings && customSettings.background) ? customSettings.background : "https://static.npmjs.com/attachments/ck3uwvv67mydydr74ea00ip4j-bg-stripes.png"}"></div> <div id="error-message-settings"></div><button class="btn btn-danger float-left ml-4 mb-3 mt-2" id="reset-default-settings">Reset to Default</button><button class="btn btn-primary float-right mr-4 mb-3 mt-2" id="save-account-settings">Save</button></div></div>`);
+                $('#close-settings').click(() => {
+                    $('#settings-fullscreen').remove();
+                });
+                $('#save-account-settings').click(() => {
+                    $('#error-message-settings').empty();
+                    if (customSettings && $('#backgroundURLField').val() == customSettings.background) {
+                        $('#error-message-settings').append('<div class="alert alert-danger ml-4 mr-4" role="alert">Well that was a bit silly! You should change the settings before saving.</div>');
+                        return;
+                    }
+                    //SAVE OPTIONS TO LOCAL STORAGE
+                    if (!customSettings) {
+                        localStorage.setItem('customSettings', JSON.stringify({background: $('#backgroundURLField').val()}));
+                        $('#error-message-settings').append('<div class="alert alert-success ml-4 mr-4" role="alert">Settings updated!</div>');
+                        $('#settings-background-display').attr('src', $('#backgroundURLField').val());
+                        $('body').css('background-image', '');
+                        $('body').css('background-image', `url(${$('#backgroundURLField').val().replace(/"/g, '')})`);
+                    } else {
+                        customSettings.background = $('#backgroundURLField').val();
+                        localStorage.setItem('customSettings', JSON.stringify(customSettings));
+                        $('#error-message-settings').append('<div class="alert alert-success ml-4 mr-4" role="alert">Settings updated!</div>');
+                        $('#settings-background-display').attr('src', $('#backgroundURLField').val());
+                        $('body').css('background-image', '');
+                        $('body').css('background-image', `url(${$('#backgroundURLField').val().replace(/"/g, '')})`);
+                    }
+                });
+                $('#reset-default-settings').click(() => {
+                    localStorage.removeItem('customSettings');
+                    $('#error-message-settings').append('<div class="alert alert-success ml-4 mr-4" role="alert">Settings updated!</div>');
+                    $('#settings-background-display').attr('src', 'https://static.npmjs.com/attachments/ck3uwvv67mydydr74ea00ip4j-bg-stripes.png');
+                    $('body').css('background-image', '');
+                    $('body').css('background-image', 'url(https://static.npmjs.com/attachments/ck3uwvv67mydydr74ea00ip4j-bg-stripes.png)');
+                    $('#backgroundURLField').val('https://static.npmjs.com/attachments/ck3uwvv67mydydr74ea00ip4j-bg-stripes.png');
                 });
             });
             function deleteMessage(message_id) {
