@@ -20,38 +20,37 @@ app.get('/login', (req, res) => {
 
 app.post('/new', async (req, res) => {
     const user = await users.findOne({ id: req.body.accountID });
-    console.log(user);
+    const id = new Date().getTime();
     if (!user) {
         const newUser = new users({
             _id: mongoose.Types.ObjectId(),
-            id: new Date().getTime(),
+            id,
             avatarURL: "https://thumbs.dreamstime.com/b/default-avatar-photo-placeholder-profile-icon-eps-file-easy-to-edit-default-avatar-photo-placeholder-profile-icon-124557887.jpg",
             username: req.body.username
         });
         newUser.save();
-    } else {
-        const channelList = await channels.find({ between: { $in: user.id } }).lean(true);
-        res.send({ id: user.id, dms: channelList.map(channel => { return channel.id }) });
     }
+    const channelList = await channels.find({ between: { $in: user ? user.id : id } }).lean(true);
+    res.send({ id: user ? user.id : id, dms: channelList.map(channel => { return channel.id }) });
 });
 
 app.post('/update-account', (req, res) => {
     users.findOne({
         id: req.body.self_id
     },
-    (err, data) => {
-        if (req.body.username == data.username && req.body.avatarURL == data.avatarURL) {
-            res.send(null);
-        } else {
-            if (req.body.username != data.username) {
-                data.username = req.body.username;
+        (err, data) => {
+            if (req.body.username == data.username && req.body.avatarURL == data.avatarURL) {
+                res.send(null);
             } else {
-                data.avatarURL = req.body.avatarURL;
+                if (req.body.username != data.username) {
+                    data.username = req.body.username;
+                } else {
+                    data.avatarURL = req.body.avatarURL;
+                }
+                data.save();
+                res.send({ id: req.body.self_id, username: req.body.username, avatarURL: req.body.avatarURL });
             }
-            data.save();
-            res.send({id: req.body.self_id, username: req.body.username, avatarURL: req.body.avatarURL});
-        }
-    });
+        });
 });
 
 app.get('/users', (req, res) => {
@@ -98,16 +97,29 @@ app.get('/messages', (req, res) => {
         id: req.query.channel_id
     },
         async (err, data) => {
+            if (!data) {
+                // create a new channel
+                const channel_id = new Date().getTime();
+                const newChannel = new channels({
+                    _id: mongoose.Types.ObjectId(),
+                    id: channel_id,
+                    type: 1,
+                    between: ["1", req.query.self_id],
+                    messages: [{ content: `Hello! Welcome ${(await users.findOne({id: req.query.self_id})).username}!!! It appears that you currently have no friends, though you can add some to hang out with by clicking that plus button at the top and entering their id!`, id: 0, author: "1" }]
+                });
+                newChannel.save();
+                data = newChannel;
+            }
             const usersInvolved = await users.find({ id: { $in: data.between } }).lean(true);
             const send = {
                 messages: [],
                 channel: {
                     name: (usersInvolved.filter(val => { return val.id != req.query.self_id }))[0].username,
+                    id: data.id
                 },
                 other_user: (usersInvolved.filter(val => { return val.id != req.query.self_id }))[0].id
             };
             const toFetch = (req.query.number && req.query.number <= 50 ? req.query.number : 50);
-            console.log(data.messages);
             const messages = data.messages.slice(Math.max(data.messages.length - toFetch, 0));
             for (const message of messages) {
                 send.messages.push(
@@ -119,7 +131,7 @@ app.get('/messages', (req, res) => {
                             id: message.author
                         },
                         id: message.id,
-                        channel_id: req.query.channel_id
+                        channel_id: data.id
                     }
                 )
             }
@@ -128,25 +140,26 @@ app.get('/messages', (req, res) => {
 });
 
 app.get('/dmchannels', (req, res) => {
-    console.log(req.query.channels);
     channels.find({
         id: { $in: req.query.channels },
         type: 1
     },
         async (err, datas) => {
-            if (!datas) return res.send([]);
+            console.log(datas);
+            if (!datas || datas.length == 0) {
+                console.log("h");
+                return res.send({ dmchannels: [] });
+            }
             console.log(datas);
             let toReturn = [];
             for (let i = 0; i < datas.length; ++i) {
                 const data = datas[i];
                 const user_id = (data.between.filter(val => { return val != req.query.self_id }))[0];
                 const user = await users.findOne({ id: user_id }).lean(true);
-                console.log(user);
                 toReturn.push({ user, channel_id: data.id });
-                console.log(req.query.channels.length);
-                console.log(i);
                 if ((req.query.channels.length - 1) == i) {
                     console.log(toReturn);
+                    console.log("e");
                     res.send({ dmchannels: toReturn });
                 }
             }
