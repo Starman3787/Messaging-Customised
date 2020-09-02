@@ -35,6 +35,7 @@ app.post('/new', async (req, res) => {
 });
 
 app.post('/update-account', (req, res) => {
+    if (!req.body.self_id) return res.send(null);
     users.findOne({
         id: req.body.self_id
     },
@@ -54,7 +55,6 @@ app.post('/update-account', (req, res) => {
 });
 
 app.get('/users', (req, res) => {
-    console.log(req.query.users);
     users.find({
         id: { $in: req.query.users }
     },
@@ -66,7 +66,6 @@ app.get('/users', (req, res) => {
 });
 
 app.post('/create-channel', (req, res) => {
-    console.log(req.body);
     if (req.body.type == 1) {
         channels.findOne({
             type: 1,
@@ -92,12 +91,11 @@ app.post('/create-channel', (req, res) => {
 });
 
 app.get('/messages', (req, res) => {
-    console.log(req.query);
     channels.findOne({
         id: req.query.channel_id
     },
         async (err, data) => {
-            if (!data) {
+            if (!data && !req.query.channel_id) {
                 // create a new channel
                 const channel_id = new Date().getTime();
                 const newChannel = new channels({
