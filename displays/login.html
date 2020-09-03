@@ -36,7 +36,7 @@
         $('#submitdetails').click(e => {
             e.preventDefault();
             $.post('/new', { 'username': $('#usernameInput').val(), 'accountID': $('#accountIDInput').val() }, data => {
-                console.log(data.dms);
+                localStorage.setItem('token', data.token);
                 localStorage.setItem('id', data.id);
                 localStorage.setItem('dms', JSON.stringify({ dms: data.dms }));
                 console.log(data.dms[0]);

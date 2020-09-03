@@ -310,7 +310,7 @@
                 transportOptions: {
                     polling: {
                         extraHeaders: {
-                            'authorisation': localStorage.getItem('id'),
+                            'authorisation': localStorage.getItem('token'),
                             'focusedchannel': localStorage.getItem('currentChannel'),
                             'channels': JSON.parse(localStorage.getItem('dms'))?.dms || [],
                             'id': localStorage.getItem('id')
@@ -382,14 +382,27 @@
                     getDMChannels();
                 });
                 $('#create_new_dm_submit').click(() => {
-                    $.post('/create-channel', { "type": 1, "to": $('#inputNewUserID').val(), "from": localStorage.getItem('id') }, data => {
-                        $('#dmcreatepopuperror').remove();
-                        if (data.channel_id == null) return $('#createdmpopupform').append('<div class="alert alert-danger mt-4" id="dmcreatepopuperror" role="alert">Oopise, something happened. Check if you already have a DM with this user, or that the user ID you entered is correct.</div>');
-                        let DMS = JSON.parse(localStorage.getItem('dms'));
-                        DMS.dms.push(data.channel_id.toString());
-                        localStorage.setItem('dms', JSON.stringify(DMS));
-                        getDMChannels();
-                        $('#modal_adddm').modal('hide');
+                    $.ajax({
+                        url: '/create-channel',
+                        type: 'post',
+                        data: {
+                            type: 1,
+                            to: $('#inputNewUserID').val(),
+                            from: localStorage.getItem('id')
+                        },
+                        headers: {
+                            "Authorisation": localStorage.getItem('token')
+                        },
+                        dataType: 'json',
+                        success: data => {
+                            $('#dmcreatepopuperror').remove();
+                            if (data.channel_id == null) return $('#createdmpopupform').append('<div class="alert alert-danger mt-4" id="dmcreatepopuperror" role="alert">Oopise, something happened. Check if you already have a DM with this user, or that the user ID you entered is correct.</div>');
+                            let DMS = JSON.parse(localStorage.getItem('dms'));
+                            DMS.dms.push(data.channel_id.toString());
+                            localStorage.setItem('dms', JSON.stringify(DMS));
+                            getDMChannels();
+                            $('#modal_adddm').modal('hide');
+                        }
                     });
                 });
             });
@@ -398,10 +411,21 @@
                 if (selfLC) {
                     return callback(JSON.parse(selfLC));
                 } else {
-                    $.get('/users', { users: [localStorage.getItem('id')] }, data => {
-                        localStorage.setItem('self', JSON.stringify(data.users[0]));
-                        return callback(data.users[0]);
-                    });
+                    $.ajax({
+                        url: '/users',
+                        type: 'get',
+                        data: {
+                            users: [localStorage.getItem('id')]
+                        },
+                        headers: {
+                            "Authorisation": localStorage.getItem('token')
+                        },
+                        dataType: 'json',
+                        success: data => {
+                            localStorage.setItem('self', JSON.stringify(data.users[0]));
+                            return callback(data.users[0]);
+                        }
+                    })
                 }
             }
             $('#info-button').click(() => {
@@ -415,16 +439,29 @@
                             $('#error-message-info').append('<div class="alert alert-danger ml-4 mr-4" role="alert">Well that was a bit silly! You should change your information before saving.</div>');
                             return;
                         }
-                        $.post('/update-account', { self_id: localStorage.getItem('id'), username: $('#userNameField').val(), avatarURL: $('#avatarURLField').val() }, data => {
-                            $('#error-message-info').empty();
-                            if (data == null) {
-                                $('#error-message-info').append('<div class="alert alert-danger ml-4 mr-4" role="alert">Well that was a bit silly! You should change your information before saving.</div>');
-                            } else {
-                                localStorage.setItem('self', JSON.stringify({ id: data.id, username: data.username, avatarURL: data.avatarURL }));
-                                $('#userNameField').val(data.username);
-                                $('avatarURLField').val(data.avatarURL);
-                                $('#info-avatar-display').attr('src', data.avatarURL);
-                                $('#error-message-info').append('<div class="alert alert-success ml-4 mr-4" role="alert">Account info updated!</div>');
+                        $.ajax({
+                            url: '/update-account',
+                            type: 'post',
+                            data: {
+                                self_id: localStorage.getItem('id'),
+                                username: $('#userNameField').val(),
+                                avatarURL: $('#avatarURLField').val()
+                            },
+                            headers: {
+                                "Authorisation": localStorage.getItem('token')
+                            },
+                            dataType: 'json',
+                            success: data => {
+                                $('#error-message-info').empty();
+                                if (data == null) {
+                                    $('#error-message-info').append('<div class="alert alert-danger ml-4 mr-4" role="alert">Well that was a bit silly! You should change your information before saving.</div>');
+                                } else {
+                                    localStorage.setItem('self', JSON.stringify({ id: data.id, username: data.username, avatarURL: data.avatarURL }));
+                                    $('#userNameField').val(data.username);
+                                    $('avatarURLField').val(data.avatarURL);
+                                    $('#info-avatar-display').attr('src', data.avatarURL);
+                                    $('#error-message-info').append('<div class="alert alert-success ml-4 mr-4" role="alert">Account info updated!</div>');
+                                }
                             }
                         });
                     });
@@ -444,7 +481,7 @@
                     }
                     //SAVE OPTIONS TO LOCAL STORAGE
                     if (!customSettings) {
-                        localStorage.setItem('customSettings', JSON.stringify({background: $('#backgroundURLField').val()}));
+                        localStorage.setItem('customSettings', JSON.stringify({ background: $('#backgroundURLField').val() }));
                         $('#error-message-settings').append('<div class="alert alert-success ml-4 mr-4" role="alert">Settings updated!</div>');
                         $('#settings-background-display').attr('src', $('#backgroundURLField').val());
                         $('body').css('background-image', '');
@@ -481,33 +518,45 @@
                 fetchMessages(false, () => { });
             }
             function fetchMessages(startup, cb) {
-                    const currentGroup = {
+                const currentGroup = {
                     authorID: undefined,
                     currentGrouping: 0
                 };
                 localStorage.setItem('grouping', JSON.stringify(currentGroup));
                 if (startup || !localStorage.getItem(localStorage.getItem('currentChannel')) || JSON.parse(localStorage.getItem(localStorage.getItem('currentChannel'))).messages.length == 0) {
-                    $.get('/messages', { "channel_id": localStorage.getItem('currentChannel') || null, "self_id": localStorage.getItem('id') }, data => {
-                        let currentDMS = JSON.parse(localStorage.getItem('dms'))?.dms || [];
-                        if (!currentDMS.includes(data.channel.id)) {
-                            currentDMS.push(data.channel.id);
-                            localStorage.setItem('dms', JSON.stringify({dms: currentDMS}));
+                    $.ajax({
+                        url: '/messages',
+                        type: 'get',
+                        data: {
+                            channel_id: localStorage.getItem('currentChannel') || null,
+                            self_id: localStorage.getItem('id')
+                        },
+                        headers: {
+                            "Authorisation": localStorage.getItem('token')
+                        },
+                        dataType: 'json',
+                        success: data => {
+                            let currentDMS = JSON.parse(localStorage.getItem('dms'))?.dms || [];
+                            if (!currentDMS.includes(data.channel.id)) {
+                                currentDMS.push(data.channel.id);
+                                localStorage.setItem('dms', JSON.stringify({ dms: currentDMS }));
+                            }
+                            localStorage.setItem('currentChannel', data.channel.id);
+                            $('#text_input').attr('placeholder', `Message ${data.channel.name}`);
+                            $(`#${data.channel.id}`).css('transform', 'scale(0.7)');
+                            let cnt = 0;
+                            localStorage.setItem(data.channel.id, JSON.stringify({ messages: data.messages, channel: data.channel }));
+                            for (const message of data.messages) {
+                                ++cnt;
+                                addMessage(message, JSON.parse(localStorage.getItem('grouping')));
+                            }
+                            if (cnt == 0) {
+                                noMessages();
+                            }
+                            $('#loading-fullscreen').remove();
+                            cb();
                         }
-                        localStorage.setItem('currentChannel', data.channel.id);
-                        $('#text_input').attr('placeholder', `Message ${data.channel.name}`);
-                        $(`#${data.channel.id}`).css('transform', 'scale(0.7)');
-                        let cnt = 0;
-                        localStorage.setItem(data.channel.id, JSON.stringify({ messages: data.messages, channel: data.channel }));
-                        for (const message of data.messages) {
-                            ++cnt;
-                            addMessage(message, JSON.parse(localStorage.getItem('grouping')));
-                        }
-                        if (cnt == 0) {
-                            noMessages();
-                        }
-                        $('#loading-fullscreen').remove();
-                        cb();
-                    });
+                    })
                 } else {
                     let cnt = 0;
                     $('#text_input').attr('placeholder', `Message ${JSON.parse(localStorage.getItem(localStorage.getItem('currentChannel'))).channel.name}`);
@@ -522,18 +571,30 @@
                 }
             }
             function getDMChannels() {
-                if (!JSON.parse(localStorage.getItem('dms'))) localStorage.setItem('dms', JSON.stringify({dms: []}));
-                $.get('/dmchannels', { "channels": (JSON.parse(localStorage.getItem('dms'))?.dms || JSON.parse([])), "self_id": localStorage.getItem('id') }, data => {
-                    $('#dms').empty();
-                    for (let i = 0; i < data.dmchannels.length; i++) {
-                        $('#dms').append(`<span id="${data.dmchannels[i].channel_id}" onclick="changeDM('${data.dmchannels[i].channel_id}')" class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4" style="width: 128px;" alt="100x100"src="${data.dmchannels[i].user.avatarURL}" data-holder-rendered="true"></span>`);
+                if (!JSON.parse(localStorage.getItem('dms'))) localStorage.setItem('dms', JSON.stringify({ dms: [] }));
+                $.ajax({
+                    url: '/dmchannels',
+                    type: 'get',
+                    data: {
+                        channels: (JSON.parse(localStorage.getItem('dms'))?.dms || JSON.parse([])),
+                        self_id: localStorage.getItem('id')
+                    },
+                    headers: {
+                        "Authorisation": localStorage.getItem('token')
+                    },
+                    dataType: 'json',
+                    success: data => {
+                        $('#dms').empty();
+                        for (let i = 0; i < data.dmchannels.length; i++) {
+                            $('#dms').append(`<span id="${data.dmchannels[i].channel_id}" onclick="changeDM('${data.dmchannels[i].channel_id}')" class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4" style="width: 128px;" alt="100x100"src="${data.dmchannels[i].user.avatarURL}" data-holder-rendered="true"></span>`);
+                        }
+                        $('#dms').append(`<span id="0" class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4" style="width: 128px;"alt="100x100" src="https://image.flaticon.com/icons/svg/32/32360.svg"data-holder-rendered="true"></span>`);
+                        $(`#${localStorage.getItem('currentChannel')}`).css('transform', 'scale(0.7)');
+                        $('#0').click(() => {
+                            $('#modal_adddm').modal('show');
+                        });
                     }
-                    $('#dms').append(`<span id="0" class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4" style="width: 128px;"alt="100x100" src="https://image.flaticon.com/icons/svg/32/32360.svg"data-holder-rendered="true"></span>`);
-                    $(`#${localStorage.getItem('currentChannel')}`).css('transform', 'scale(0.7)');
-                    $('#0').click(() => {
-                        $('#modal_adddm').modal('show');
-                    });
-                });
+                })
             }
             function noMessages() {
                 $('#messages').append('<span class="text-center mx-auto mt-4" id="nomessages"><h3 class="text-center mx-auto text-light mt-4">No messages here yet :(</h3></span>');
