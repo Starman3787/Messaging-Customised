@@ -652,3 +652,7 @@ Receive structure:
 }
 ```
 
+## Flowcharts
+
+![The processes that all API endpoints carry out. The authorisation token verification parts have been omitted.](.gitbook/assets/mcm0.png)
+
