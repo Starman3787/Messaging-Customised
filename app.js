@@ -65,31 +65,6 @@ app.get('/users', (req, res) => {
         }).lean(true);
 });
 
-app.post('/create-channel', (req, res) => {
-    if (req.body.type == 1) {
-        channels.findOne({
-            type: 1,
-            between: req.body.to
-        },
-            async (err, data) => {
-                if (!data && req.body.to != req.body.from && (await users.findOne({ id: req.body.to })).lean(true)) {
-                    const channel_id = new Date().getTime();
-                    const newChannel = new channels({
-                        _id: mongoose.Types.ObjectId(),
-                        id: channel_id,
-                        type: 1,
-                        between: [req.body.to, req.body.from],
-                        messages: []
-                    });
-                    newChannel.save();
-                    return res.send({ channel_id });
-                } else {
-                    return res.send({ channel_id: null });
-                }
-            });
-    }
-});
-
 app.get('/messages', (req, res) => {
     channels.findOne({
         id: req.query.channel_id
@@ -143,45 +118,32 @@ app.get('/dmchannels', (req, res) => {
         type: 1
     },
         async (err, datas) => {
-            console.log(datas);
-            if (!datas || datas.length == 0) {
-                console.log("h");
-                return res.send({ dmchannels: [] });
-            }
-            console.log(datas);
+            if (!datas || datas.length == 0) return res.send({ dmchannels: [] });
             let toReturn = [];
             for (let i = 0; i < datas.length; ++i) {
                 const data = datas[i];
-                const user_id = (data.between.filter(val => { return val != req.query.self_id }))[0];
+                const user_id = (data.between.filter(val =>  val != req.query.self_id))[0];
                 const user = await users.findOne({ id: user_id }).lean(true);
                 toReturn.push({ user, channel_id: data.id });
-                if ((req.query.channels.length - 1) == i) {
-                    console.log(toReturn);
-                    console.log("e");
-                    res.send({ dmchannels: toReturn });
-                }
+                if ((req.query.channels.length - 1) == i) res.send({ dmchannels: toReturn });
             }
         }).select({ between: 1, id: 1 }).lean(true);
 });
 
 io.on('connection', socket => {
-    console.log(socket.handshake);
-    console.log('a user connected');
-    console.log(socket.handshake.headers);
-    socket.handshake.headers.channels.split(',').forEach(chnl => {
-        console.log(chnl);
-        socket.join(chnl);
+    socket.handshake.headers.channels.split(',').forEach(channel => {
+        socket.join(channel);
     });
 
+    socket.join(socket.handshake.headers.id);
+
     socket.on('message', message => {
-        console.log(message);
+        console.log(socket);
         if (!message.content || message.content == '') return;
         const ts = new Date().getTime();
         channels.updateOne({ id: message.channel }, { $push: { messages: { content: message.content, id: ts, author: message.author } } }, async (err, raw) => {
-            //{messages: {$push: {content: message.content, id: new Date().getTime(), author: message.author}}}
             console.log(err);
             console.log(raw);
-            console.log(message.channel);
             socket.emit('message', {
                 author: await users.findOne({ id: message.author }),
                 content: message.content,
@@ -197,7 +159,6 @@ io.on('connection', socket => {
         });
     });
     socket.on('messageDeleted', message => {
-        console.log(message);
         channels.updateOne({ id: message.channel }, { $pull: { messages: { id: parseInt(message.id) } } }, (err, raw) => {
             console.log(err);
             console.log(raw);
@@ -211,6 +172,34 @@ io.on('connection', socket => {
             });
         });
 
+    });
+
+    app.post('/create-channel', (req, res) => {
+        console.log(req.body);
+        if (req.body.type == 1) {
+            channels.findOne({
+                type: 1,
+                between: [req.body.to, req.body.from]
+            },
+                async (err, data) => {
+                    console.log(data);
+                    if (!data && req.body.to != req.body.from && (await users.findOne({ id: req.body.to }).lean(true))) {
+                        const channel_id = new Date().getTime();
+                        const newChannel = new channels({
+                            _id: mongoose.Types.ObjectId(),
+                            id: channel_id,
+                            type: 1,
+                            between: [req.body.to, req.body.from],
+                            messages: []
+                        });
+                        newChannel.save();
+                        socket.to(req.body.to).emit('channelCreate', channel_id);
+                        return res.send({ channel_id });
+                    } else {
+                        return res.send({ channel_id: null });
+                    }
+                });
+        }
     });
 });
 
