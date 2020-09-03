@@ -12,6 +12,7 @@ mongoose.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASS
 const srs = require('secure-random-string');
 let sockets = [];
 const tokens = require('quick.db');
+const channel = require('./models/channel.js');
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/displays/index.html');
@@ -61,9 +62,10 @@ io.on('connection', socket => {
     socket.join(socket.handshake.headers.id);
     sockets.push({ id: socket.handshake.headers.id, socket });
     socket.on('message', message => {
+        if (tokens.get(socket.handshake.headers.authorisation) != message.author) return;
         if (!message.content || message.content == '') return;
         const ts = new Date().getTime();
-        channels.updateOne({ id: message.channel }, { $push: { messages: { content: message.content, id: ts, author: message.author } } }, async (err, raw) => {
+        channels.updateOne({ id: message.channel }, { $push: { messages: { content: message.content, id: ts.toString(), author: message.author } } }, async (err, raw) => {
             console.log(err);
             console.log(raw);
             socket.emit('message', {
@@ -80,8 +82,10 @@ io.on('connection', socket => {
             });
         });
     });
-    socket.on('messageDeleted', message => {
-        channels.updateOne({ id: message.channel }, { $pull: { messages: { id: parseInt(message.id) } } }, (err, raw) => {
+    socket.on('messageDeleted', async message => {
+        const msg = await channels.findOne({ id: message.channel, 'messages.id': message.id }).select({ _id: 0, messages: 1 });
+        if (!msg.find(m => m.author == tokens.get(socket.handshake.headers.authorisation))) return;
+        channels.updateOne({ id: message.channel }, { $pull: { messages: { id: message.id } } }, (err, raw) => {
             console.log(err);
             console.log(raw);
             socket.to(message.channel).emit('messageDeleted', {
