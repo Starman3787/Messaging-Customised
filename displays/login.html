@@ -34,7 +34,6 @@
 <script>
     $(function() {
         $('#submitdetails').click(e => {
-            console.log("uu");
             e.preventDefault();
             $.post('/new', { 'username': $('#usernameInput').val(), 'accountID': $('#accountIDInput').val() }, data => {
                 console.log(data.dms);
