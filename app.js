@@ -9,7 +9,9 @@ const io = require('socket.io')(http);
 const users = require('./models/user.js');
 const channels = require('./models/channel.js');
 mongoose.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}/${process.env.DB_PATH}`, { useNewUrlParser: true, useUnifiedTopology: true });
+const srs = require('secure-random-string');
 let sockets = [];
+const tokens = require('quick.db');
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/displays/index.html');
@@ -43,11 +45,16 @@ app.post('/new', async (req, res) => {
             return res.json(null);
         }
     }
-    const channelList = await channels.find({ between: { $in: user ? user.id : id } }).lean(true);
-    return res.json({ id: user ? user.id : id, dms: channelList.map(channel => channel.id) });
+    const token = srs({length: 256});
+    tokens.set(token, user?.id || id);
+    const channelList = await channels.find({ between: { $in: user?.id || id } }).lean(true);
+    return res.json({ id: user ? user.id : id, dms: channelList.map(channel => channel.id), token });
 });
 
 io.on('connection', socket => {
+    if (!tokens.get(socket.handshake.headers.authorisation)) {
+        return;
+    }
     socket.handshake.headers.channels.split(',').forEach(channel => {
         return socket.join(channel);
     });
@@ -92,7 +99,11 @@ io.on('connection', socket => {
     app.post('/create-channel', (req, res) => {
         if (!req.body.type || !req.body.to || !req.body.from) {
             res.status(400);
-            res.json(null);
+            return res.json(null);
+        }
+        if (tokens.get(req.headers.authorisation) != req.body.from) {
+            res.status(401);
+            return res.json(null);
         }
         if (req.body.type == 1) {
             channels.findOne({
@@ -133,6 +144,10 @@ io.on('connection', socket => {
             res.status(400);
             return res.json(null);
         }
+        if (tokens.get(req.headers.authorisation) != req.body.self_id) {
+            res.status(401);
+            return res.json(null);
+        }
         users.findOne({
             id: req.body.self_id
         },
@@ -163,6 +178,10 @@ io.on('connection', socket => {
             res.status(400);
             return res.json(null);
         }
+        if (!tokens.get(req.headers.authorisation)) {
+            res.status(401);
+            return res.json(null);
+        }
         users.find({
             id: { $in: req.query.users }
         },
@@ -182,8 +201,12 @@ io.on('connection', socket => {
     });
 
     app.get('/messages', (req, res) => {
-        if (!req.query.channel_id && req.query.channel_id != null) {
+        if ((!req.query.channel_id && req.query.channel_id != null) || !req.query.self_id) {
             res.status(400);
+            return res.json(null);
+        }
+        if (tokens.get(req.headers.authorisation) != req.query.self_id) {
+            res.status(401);
             return res.json(null);
         }
         channels.findOne({
@@ -243,6 +266,10 @@ io.on('connection', socket => {
     app.get('/dmchannels', (req, res) => {
         if (!req.query.channels || req.query.channels.length == 0) {
             res.status(400);
+            return res.json(null);
+        }
+        if (!tokens.get(req.headers.authorisation)) {
+            res.status(401);
             return res.json(null);
         }
         channels.find({
