@@ -18,6 +18,10 @@ In order to receive channel specific events, you must provide a list of channel 
 
 You will not receive any real-time messages or updates about the channels if you do not provide their IDs here. Messages can still be fetched at any time.
 
+All examples below assume the 'Authorisation' token is being sent in the headers and that the base URL has been set.
+
+You must provide the 'Authorisation' token in the headers during the initial webhook connection, in the same way as endpoints. Connecting to the websocket will be successful even without a valid 'Authorisation' token, though you will simply not receive any events.
+
 ## Endpoints
 
 {% api-method method="post" host="http://our.ip:port" path="/new" %}
@@ -31,12 +35,6 @@ This endpoint is used in order to create a new account, or login and fetch your 
 
 {% api-method-spec %}
 {% api-method-request %}
-{% api-method-headers %}
-{% api-method-parameter name="Authorisation" type="string" required=true %}
-Authentication token to indentify the user and check if they have permissions on this endpoint.
-{% endapi-method-parameter %}
-{% endapi-method-headers %}
-
 {% api-method-body-parameters %}
 {% api-method-parameter name="accountID" type="string" required=false %}
 The ID of the account you are trying to login with. Only needed if you are trying to login, otherwise leave this empty.
@@ -57,7 +55,8 @@ New account creared successfully.
 ```javascript
 {
     "id": "1596544373547", // id of the user
-    "dms": [] // ids of dm channels that the user is in
+    "dms": [], // ids of dm channels that the user is in
+    "token": "jO5Ob9NZvue9RG4-x-iEm1w8SDozfq_NBZvyOccpIsgS4V8OwTOIppQliD02hHq_Yw3pIZXH2YgM5y-Ig1k4vb-KB1rO0fIEW-223NeZRXZ8OAr-49Za4q4T99uEU_IMC1bkvNTKXolNQLhgD7wc8XquNh3-B4wMPUVHqjTNZzfirHqmG6NcedJRvlCDgnY2FOBZeTFrhHzyvFqI39huBc1GIlDjpiE9unyQ1cTrCmAqTNcNoVQcDaYqwV_QyMZi" // the authorisation token for this login session
 }
 ```
 {% endapi-method-response-example %}
@@ -70,7 +69,8 @@ Login details are correct.
 ```javascript
 {    
     "id": "1596544373547", // id of the user
-    "dms": ["1599058363394","1599080295208"] // ids of dm channels that the user is in
+    "dms": ["1599058363394","1599080295208"], // ids of dm channels that the user is in
+    "token": "jO5Ob9NZvue9RG4-x-iEm1w8SDozfq_NBZvyOccpIsgS4V8OwTOIppQliD02hHq_Yw3pIZXH2YgM5y-Ig1k4vb-KB1rO0fIEW-223NeZRXZ8OAr-49Za4q4T99uEU_IMC1bkvNTKXolNQLhgD7wc8XquNh3-B4wMPUVHqjTNZzfirHqmG6NcedJRvlCDgnY2FOBZeTFrhHzyvFqI39huBc1GIlDjpiE9unyQ1cTrCmAqTNcNoVQcDaYqwV_QyMZi" // the authorisation token for this login session
 }
 ```
 {% endapi-method-response-example %}
@@ -111,7 +111,7 @@ This endpoint is used to update account settings, such as the username and profi
 {% api-method-request %}
 {% api-method-headers %}
 {% api-method-parameter name="Authorisation" type="string" required=true %}
-Authentication token to indentify the user and check if they have permissions on this endpoint.
+Authentication token to identify the user and check if they have permissions on this endpoint.
 {% endapi-method-parameter %}
 {% endapi-method-headers %}
 
@@ -148,6 +148,16 @@ Returns the updated user.
 {% api-method-response-example httpCode=400 %}
 {% api-method-response-example-description %}
 You have not provided the required body parameters.
+{% endapi-method-response-example-description %}
+
+```javascript
+null
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=401 %}
+{% api-method-response-example-description %}
+The provided authorisation token is not valid.
 {% endapi-method-response-example-description %}
 
 ```javascript
@@ -221,6 +231,16 @@ The channel was successfully created. The 'channelCreate' event will also be emi
 {
     "channel_id": "1599079146709" // the id of the new channel
 }
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=401 %}
+{% api-method-response-example-description %}
+The provided authorisation token is not valid.
+{% endapi-method-response-example-description %}
+
+```javascript
+null
 ```
 {% endapi-method-response-example %}
 
@@ -298,6 +318,16 @@ Returns an array of users. This is not guaranteed to be in the order they were r
 {% api-method-response-example httpCode=400 %}
 {% api-method-response-example-description %}
 You have provided an empty array of users or not provided the 'users' parameter at all.
+{% endapi-method-response-example-description %}
+
+```javascript
+null
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=401 %}
+{% api-method-response-example-description %}
+The provided authorisation token is not valid.
 {% endapi-method-response-example-description %}
 
 ```javascript
@@ -435,6 +465,16 @@ null
 ```
 {% endapi-method-response-example %}
 
+{% api-method-response-example httpCode=401 %}
+{% api-method-response-example-description %}
+The provided authorisation token is not valid.
+{% endapi-method-response-example-description %}
+
+```javascript
+null
+```
+{% endapi-method-response-example %}
+
 {% api-method-response-example httpCode=500 %}
 {% api-method-response-example-description %}
 There was an error.
@@ -505,6 +545,16 @@ Returns the channels which were requested. They are not guaranteed to be in the 
 {% api-method-response-example httpCode=400 %}
 {% api-method-response-example-description %}
 No channel IDs were provided.
+{% endapi-method-response-example-description %}
+
+```javascript
+null
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=401 %}
+{% api-method-response-example-description %}
+The provided authorisation token is not valid.
 {% endapi-method-response-example-description %}
 
 ```javascript
