@@ -1,5 +1,6 @@
 # Table of contents
 
-* [Navigating the Platform](README.md)
+* [Welcome!](README.md)
+* [Navigating the Client](navigating-the-client.md)
 * [API](api.md)
 

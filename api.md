@@ -33,7 +33,7 @@ This endpoint is used in order to create a new account, or login and fetch your 
 {% api-method-request %}
 {% api-method-headers %}
 {% api-method-parameter name="Authorisation" type="string" required=true %}
-Authentication token to identify the user and check if they have permissions on this endpoint.
+Authentication token to indentify the user and check if they have permissions on this endpoint.
 {% endapi-method-parameter %}
 {% endapi-method-headers %}
 
@@ -111,7 +111,7 @@ This endpoint is used to update account settings, such as the username and profi
 {% api-method-request %}
 {% api-method-headers %}
 {% api-method-parameter name="Authorisation" type="string" required=true %}
-Authentication token to identify the user and check if they have permissions on this endpoint.
+Authentication token to indentify the user and check if they have permissions on this endpoint.
 {% endapi-method-parameter %}
 {% endapi-method-headers %}
 
