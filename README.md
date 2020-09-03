@@ -1,7 +1,3 @@
----
-description: How to navigate the default client.
----
-
 # Navigating the Platform
 
 ## Layout
