@@ -39,7 +39,6 @@
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('id', data.id);
                 localStorage.setItem('dms', JSON.stringify({ dms: data.dms }));
-                console.log(data.dms[0]);
                 localStorage.setItem('currentChannel', data.dms[0]);
                 window.location.href = '/';
             });
