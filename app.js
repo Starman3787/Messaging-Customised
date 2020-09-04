@@ -83,7 +83,8 @@ io.on('connection', socket => {
     });
     socket.on('messageDeleted', async message => {
         const msg = await channels.findOne({ id: message.channel, 'messages.id': message.id }).select({ _id: 0, messages: 1 });
-        if (!msg.find(m => m.author == tokens.get(socket.handshake.headers.authorisation))) return;
+        if (!msg) return;
+        if (!msg.messages.find(m => m.author == tokens.get(socket.handshake.headers.authorisation))) return;
         channels.updateOne({ id: message.channel }, { $pull: { messages: { id: message.id } } }, (err, raw) => {
             console.log(err);
             console.log(raw);
@@ -204,7 +205,7 @@ io.on('connection', socket => {
     });
 
     app.get('/messages', (req, res) => {
-        if ((!req.query.channel_id && req.query.channel_id != null) || !req.query.self_id) {
+        if (!req.query.self_id) {
             res.status(400);
             return res.json(null);
         }
@@ -221,7 +222,7 @@ io.on('connection', socket => {
                     res.json(null);
                     throw err;
                 }
-                if (!data && req.query.channel_id == null) {
+                if (!data && req.query.channel_id == 'undefined') {
                     // create a new channel
                     const channel_id = new Date().getTime();
                     const newChannel = new channels({

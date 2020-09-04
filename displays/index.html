@@ -528,7 +528,7 @@
                         url: '/messages',
                         type: 'get',
                         data: {
-                            channel_id: localStorage.getItem('currentChannel') || null,
+                            channel_id: localStorage.getItem('currentChannel'),
                             self_id: localStorage.getItem('id')
                         },
                         headers: {
