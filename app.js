@@ -12,7 +12,6 @@ mongoose.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASS
 const srs = require('secure-random-string');
 let sockets = [];
 const tokens = require('quick.db');
-const channel = require('./models/channel.js');
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/displays/index.html');
