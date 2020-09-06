@@ -588,7 +588,7 @@
                         for (let i = 0; i < data.dmchannels.length; i++) {
                             $('#dms').append(`<span id="${data.dmchannels[i].channel_id}" onclick="changeDM('${data.dmchannels[i].channel_id}')" class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4" style="width: 128px;" alt="100x100"src="${data.dmchannels[i].user.avatarURL}" data-holder-rendered="true"></span>`);
                         }
-                        $('#dms').append(`<span id="0" class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4" style="width: 128px;"alt="100x100" src="https://image.flaticon.com/icons/svg/32/32360.svg"data-holder-rendered="true"></span>`);
+                        $('#dms').append(`<span id="0" class="user-icons ml-4"><img loading="lazy" class="rounded-circle shadow-lg mt-4 mb-2 mr-4" style="width: 128px; height: 128px;"alt="100x100" src="https://image.flaticon.com/icons/svg/32/32360.svg"data-holder-rendered="true"></span>`);
                         $(`#${localStorage.getItem('currentChannel')}`).css('transform', 'scale(0.7)');
                         $('#0').click(() => {
                             $('#modal_adddm').modal('show');
