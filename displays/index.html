@@ -260,7 +260,7 @@
         <script src="/socket.io/socket.io.js"></script>
         <script>
             function isImage(url) {
-                return ((url.includes('jpeg') || url.includes('jpg') || url.includes('gif') || url.includes('png')) != null);
+                return (url.includes('jpg') || url.includes('jpeg') || url.includes('gif') || url.includes('png'));
             }
             function getImage(content) {
                 const tempURL = getURL(content);
