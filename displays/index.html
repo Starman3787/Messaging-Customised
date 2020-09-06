@@ -276,6 +276,20 @@
             function getURL(string) {
                 return string.match(/\bhttps?:\/\/\S+/gi);
             }
+            showdown.setOption('omitExtraWLInCodeBlocks', true);
+            showdown.setOption('simplifiedAutoLink', true);
+            showdown.setOption('excludeTrailingPunctuationFromURLs', true);
+            showdown.setOption('strikethrough', true);
+            showdown.setOption('ghCodeBlocks', true);
+            showdown.setOption('tasklists', true);
+            showdown.setOption('smoothLivePreview', true);
+            showdown.setOption('smartIndentationFix', true);
+            showdown.setOption('simpleLineBreaks', true);
+            showdown.setOption('requireSpaceBeforeHeadingText', true);
+            showdown.setOption('ghMentions', true);
+            showdown.setOption('openLinksInNewWindow', true);
+            showdown.setOption('emoji', true);
+            showdown.setOption('underline', true);
             function escapeHTML(content) {
                 return content
                         .replace(/&/g, "&amp;")
@@ -299,10 +313,6 @@
                     }
                     const image = getImage(message.content);
                     const args = message.content.split(" ");
-                    for (let i = 0; i < args.length; ++i) {
-                        const url = getURL(args[i])
-                        if (url != null) args[i] = args[i].replace(url[0], `<a href="${url}" target="_blank" class="text-primary">${url}</a>`);
-                    }
                     args[0] = args[0].replace('/tableflip', '(╯°□°）╯︵ ┻━┻');
                     args[0] = args[0].replace('/shrug', '¯\\_(ツ)_/¯');
                     args[0] = args[0].replace('/unflip', '┬─┬ ノ( ゜-゜ノ)');
