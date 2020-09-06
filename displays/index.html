@@ -259,6 +259,7 @@
                     style="display: flex; align-items: center; justify-content: center; max-width: 100%;" src="" />
             </div>
         </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.4.0/showdown.min.js"></script>
         <script src="/socket.io/socket.io.js"></script>
         <script>
             function isImage(url) {
@@ -277,6 +278,18 @@
             }
             function getURL(string) {
                 return string.match(/\bhttps?:\/\/\S+/gi);
+            }
+            function escapeHTML(content) {
+                return content
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#039;");
+            }
+            function convertMarkdown(content) {
+                const converter = new showdown.Converter();
+                return converter.makeHtml(content);
             }
             function addMessage(messageRaw, currentGroup) {
                 const message = messageRaw;
@@ -297,7 +310,7 @@
                     args[0] = args[0].replace('/shrug', '¯\\_(ツ)_/¯');
                     args[0] = args[0].replace('/unflip', '┬─┬ ノ( ゜-゜ノ)');
                     message.content = args.join(" ");
-                    $(`#messages_grouping_${currentGroup.currentGrouping}`).append(`<span class="card ml-4 mr-4 mt-4 w-100 border-0 message" id='${message.id}'>${message.author.id == localStorage.getItem('id') ? `<div style="position: absolute; right: 15px; background-color: #4c545d; border-radius: 5px; top: -20px; height: 40px;" class="px-2 py-2"><button onclick="deleteMessage('${message.id}')" style="background-color: rgba(0, 0, 0, 0); border: none; color: #fff;"><i class="fa fa-trash" aria-hidden="true"></i></button></div>` : ``}<div class="rounded card-body text-light bg-dark border-0 shadow-lg">${message.content}${image ? `<br><br><img loading="lazy" data-toggle="modal" data-target="#enlarge_image" src="${image}" style="border-radius: 4px; max-width: 90%; cursor: pointer;" id="${message.id}_imgembed" onclick="enlargeImage('${message.id}')">` : ''}</div></span>`);
+                    $(`#messages_grouping_${currentGroup.currentGrouping}`).append(`<span class="card ml-4 mr-4 mt-4 w-100 border-0 message" id='${message.id}'>${message.author.id == localStorage.getItem('id') ? `<div style="position: absolute; right: 15px; background-color: #4c545d; border-radius: 5px; top: -20px; height: 40px;" class="px-2 py-2"><button onclick="deleteMessage('${message.id}')" style="background-color: rgba(0, 0, 0, 0); border: none; color: #fff;"><i class="fa fa-trash" aria-hidden="true"></i></button></div>` : ``}<div class="rounded card-body text-light bg-dark border-0 shadow-lg">${convertMarkdown(escapeHTML(message.content))}${image ? `<br><br><img loading="lazy" data-toggle="modal" data-target="#enlarge_image" src="${image}" style="border-radius: 4px; max-width: 90%; cursor: pointer;" id="${message.id}_imgembed" onclick="enlargeImage('${message.id}')">` : ''}</div></span>`);
                     localStorage.setItem('grouping', JSON.stringify(currentGroup));
                     document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
                 }
