@@ -9,9 +9,16 @@ const io = require('socket.io')(http);
 const users = require('./models/user.js');
 const channels = require('./models/channel.js');
 mongoose.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}/${process.env.DB_PATH}`, { useNewUrlParser: true, useUnifiedTopology: true });
-const srs = require('secure-random-string');
+const jwt = require('jsonwebtoken');
 let sockets = [];
-const tokens = require('quick.db');
+
+function verifyToken(jwtToken) {
+    try {
+        return jwt.verify(jwtToken, process.env.PRIVATE_KEY);
+    } catch (e) {
+        return null;
+    }
+}
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/displays/index.html');
@@ -19,6 +26,10 @@ app.get('/', (req, res) => {
 
 app.get('/login', (req, res) => {
     res.sendFile(__dirname + '/displays/login.html');
+});
+
+app.get('/emoji-selector.bundle.js', (req, res) => {
+    res.sendFile(__dirname + '/node_modules/emoji-selector/emoji-selector.bundle.js');
 });
 
 app.post('/new', async (req, res) => {
@@ -45,36 +56,40 @@ app.post('/new', async (req, res) => {
             return res.json(null);
         }
     }
-    const token = srs({length: 256});
-    tokens.set(token, user?.id || id);
-    const channelList = await channels.find({ between: { $in: user?.id || id } }).lean(true);
-    return res.json({ id: user ? user.id : id, dms: channelList.map(channel => channel.id), token });
+    jwt.sign({ id: user?.id || id, created: new Date().getTime().toString() }, process.env.PRIVATE_KEY, { expiresIn: 86400 }, async (err, token) => {
+        if (err) {
+            res.status(500);
+            res.json(null);
+            throw err;
+        }
+        const channelList = await channels.find({ between: { $in: user?.id || id } }).lean(true);
+        return res.json({ id: user ? user.id : id, dms: channelList.map(channel => channel.id), token });
+    });
 });
 
 io.on('connection', socket => {
-    if (!tokens.get(socket.handshake.headers.authorisation)) {
-        return;
-    }
+    if (!verifyToken(socket.handshake.headers.authorisation)) return;
     socket.handshake.headers.channels.split(',').forEach(channel => {
         return socket.join(channel);
     });
     socket.join(socket.handshake.headers.id);
     sockets.push({ id: socket.handshake.headers.id, socket });
     socket.on('message', message => {
-        if (tokens.get(socket.handshake.headers.authorisation) != message.author) return;
+        const tokenInfo = verifyToken(socket.handshake.headers.authorisation);
+        if (!tokenInfo) return;
         if (!message.content || message.content == '') return;
         const ts = new Date().getTime();
-        channels.updateOne({ id: message.channel }, { $push: { messages: { content: message.content, id: ts.toString(), author: message.author } } }, async (err, raw) => {
+        channels.updateOne({ id: message.channel }, { $push: { messages: { content: message.content, id: ts.toString(), author: tokenInfo.id } } }, async (err, raw) => {
             console.log(err);
             console.log(raw);
             socket.emit('message', {
-                author: await users.findOne({ id: message.author }).lean(true).select({ _id: 0 }),
+                author: await users.findOne({ id: tokenInfo.id }).lean(true).select({ _id: 0 }),
                 content: message.content,
                 id: ts.toString(),
                 channel_id: message.channel
             });
             socket.to(message.channel).emit('message', {
-                author: await users.findOne({ id: message.author }).lean(true).select({ _id: 0 }),
+                author: await users.findOne({ id: tokenInfo.id }).lean(true).select({ _id: 0 }),
                 content: message.content,
                 id: ts.toString(),
                 channel_id: message.channel
@@ -84,7 +99,9 @@ io.on('connection', socket => {
     socket.on('messageDeleted', async message => {
         const msg = await channels.findOne({ id: message.channel, 'messages.id': message.id }).select({ _id: 0, messages: 1 });
         if (!msg) return;
-        if (!msg.messages.find(m => m.author == tokens.get(socket.handshake.headers.authorisation))) return;
+        const tokenInfo = verifyToken(socket.handshake.headers.authorisation);
+        if (!tokenInfo) return;
+        if (!msg.messages.find(m => m.author == tokenInfo.id)) return;
         channels.updateOne({ id: message.channel }, { $pull: { messages: { id: message.id } } }, (err, raw) => {
             console.log(err);
             console.log(raw);
@@ -101,18 +118,19 @@ io.on('connection', socket => {
     });
 
     app.post('/create-channel', (req, res) => {
-        if (!req.body.type || !req.body.to || !req.body.from) {
+        if (!req.body.type || !req.body.to || req.headers.authorisation) {
             res.status(400);
             return res.json(null);
         }
-        if (tokens.get(req.headers.authorisation) != req.body.from) {
+        const tokenInfo = verifyToken(req.headers.authorisation);
+        if (!tokenInfo) {
             res.status(401);
             return res.json(null);
         }
         if (req.body.type == 1) {
             channels.findOne({
                 type: 1,
-                between: [req.body.to, req.body.from]
+                between: [req.body.to, tokenInfo.id]
             },
                 async (err, data) => {
                     if (err) {
@@ -120,18 +138,18 @@ io.on('connection', socket => {
                         res.json(null);
                         throw err;
                     }
-                    if (!data && req.body.to != req.body.from && (await users.findOne({ id: req.body.to }).lean(true))) {
+                    if (!data && req.body.to != tokenInfo.id && (await users.findOne({ id: req.body.to }).lean(true))) {
                         const channel_id = new Date().getTime();
                         const newChannel = new channels({
                             _id: mongoose.Types.ObjectId(),
                             id: channel_id,
                             type: 1,
-                            between: [req.body.to, req.body.from],
+                            between: [req.body.to, tokenInfo.id],
                             messages: []
                         });
                         newChannel.save();
                         socket.to(req.body.to).emit('channelCreate', { channel_id });
-                        const toJoin = sockets.find(skt => skt.id == req.body.from);
+                        const toJoin = sockets.find(skt => skt.id == tokenInfo.id);
                         toJoin.socket.join(channel_id);
                         res.status(201);
                         return res.json({ channel_id });
@@ -144,16 +162,17 @@ io.on('connection', socket => {
     });
 
     app.post('/update-account', (req, res) => {
-        if (!req.body.self_id || !req.body.avatarURL || !req.body.username) {
+        if (!req.body.avatarURL || !req.body.username || !req.headers.authorisation) {
             res.status(400);
             return res.json(null);
         }
-        if (tokens.get(req.headers.authorisation) != req.body.self_id) {
+        const tokenInfo = verifyToken(req.headers.authorisation);
+        if (!tokenInfo) {
             res.status(401);
             return res.json(null);
         }
         users.findOne({
-            id: req.body.self_id
+            id: tokenInfo.id
         },
             (err, data) => {
                 if (err) {
@@ -172,17 +191,18 @@ io.on('connection', socket => {
                     }
                     data.save();
                     res.status(202);
-                    return res.json({ id: req.body.self_id, username: req.body.username, avatarURL: req.body.avatarURL });
+                    return res.json({ id: tokenInfo.id, username: req.body.username, avatarURL: req.body.avatarURL });
                 }
             });
     });
 
     app.get('/users', (req, res) => {
-        if (!req.query.users || req.query.users.length == 0) {
+        if (!req.query.users || req.query.users.length == 0 || !req.headers.authorisation) {
             res.status(400);
             return res.json(null);
         }
-        if (!tokens.get(req.headers.authorisation)) {
+        const tokenInfo = verifyToken(req.headers.authorisation);
+        if (!tokenInfo) {
             res.status(401);
             return res.json(null);
         }
@@ -205,16 +225,18 @@ io.on('connection', socket => {
     });
 
     app.get('/messages', (req, res) => {
-        if (!req.query.self_id) {
+        if (!req.headers.authorisation) {
             res.status(400);
             return res.json(null);
         }
-        if (tokens.get(req.headers.authorisation) != req.query.self_id) {
+        const tokenInfo = verifyToken(req.headers.authorisation);
+        if (!tokenInfo) {
             res.status(401);
             return res.json(null);
         }
         channels.findOne({
-            id: req.query.channel_id
+            id: req.query.channel_id,
+            between: tokenInfo.id
         },
             async (err, data) => {
                 if (err) {
@@ -229,8 +251,8 @@ io.on('connection', socket => {
                         _id: mongoose.Types.ObjectId(),
                         id: channel_id,
                         type: 1,
-                        between: ["1", req.query.self_id],
-                        messages: [{ content: `Hello! Welcome ${(await users.findOne({ id: req.query.self_id }).lean(true).select({ _id: 0 })).username}!!! It appears that you currently have no friends, though you can add some to hang out with by clicking that plus button at the top and entering their id!`, id: "0", author: "1" }]
+                        between: ["1", tokenInfo.id],
+                        messages: [{ content: `Hello! Welcome ${(await users.findOne({ id: tokenInfo.id }).lean(true).select({ _id: 0 })).username}!!! It appears that you currently have no friends, though you can add some to hang out with by clicking that plus button at the top and entering their id!`, id: "0", author: "1" }]
                     });
                     newChannel.save();
                     data = newChannel;
@@ -242,10 +264,10 @@ io.on('connection', socket => {
                 const send = {
                     messages: [],
                     channel: {
-                        name: (usersInvolved.filter(val => { return val.id != req.query.self_id }))[0].username,
+                        name: (usersInvolved.filter(val => { return val.id != tokenInfo.id }))[0].username,
                         id: data.id
                     },
-                    other_user: (usersInvolved.filter(val => { return val.id != req.query.self_id }))[0].id
+                    other_user: (usersInvolved.filter(val => { return val.id != tokenInfo.id }))[0].id
                 };
                 const toFetch = (req.query.number && req.query.number <= 50 ? req.query.number : 50);
                 const messages = data.messages.slice(Math.max(data.messages.length - toFetch, 0));
@@ -268,16 +290,18 @@ io.on('connection', socket => {
     });
 
     app.get('/dmchannels', (req, res) => {
-        if (!req.query.channels || req.query.channels.length == 0) {
+        if (!req.query.channels || req.query.channels.length == 0 || !req.headers.authorisation) {
             res.status(400);
             return res.json(null);
         }
-        if (!tokens.get(req.headers.authorisation)) {
+        const tokenInfo = verifyToken(req.headers.authorisation);
+        if (!tokenInfo) {
             res.status(401);
             return res.json(null);
         }
         channels.find({
             id: { $in: req.query.channels },
+            between: tokenInfo.id,
             type: 1
         },
             async (err, datas) => {
@@ -293,7 +317,7 @@ io.on('connection', socket => {
                 let toReturn = [];
                 for (let i = 0; i < datas.length; ++i) {
                     const data = datas[i];
-                    const user_id = (data.between.filter(val => val != req.query.self_id))[0];
+                    const user_id = (data.between.filter(val => val != tokenInfo.id))[0];
                     const user = await users.findOne({ id: user_id }).lean(true).select({ _id: 0 });
                     toReturn.push({ user, channel_id: data.id });
                     if ((req.query.channels.length - 1) == i) {
