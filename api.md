@@ -123,10 +123,6 @@ If this is not being updated, you must provide the current avatar URL. Otherwise
 {% api-method-parameter name="username" type="string" required=true %}
 If this is not being updated, you must provide the current username. Otherwise if you are updating this, provide a new username.
 {% endapi-method-parameter %}
-
-{% api-method-parameter name="self\_id" type="string" required=true %}
-The ID of the user making the request.
-{% endapi-method-parameter %}
 {% endapi-method-body-parameters %}
 {% endapi-method-request %}
 
@@ -147,7 +143,7 @@ Returns the updated user.
 
 {% api-method-response-example httpCode=400 %}
 {% api-method-response-example-description %}
-You have not provided the required body parameters.
+You have not provided the avatar URL or the username, or you have not provided an authorisation token.
 {% endapi-method-response-example-description %}
 
 ```javascript
@@ -206,10 +202,6 @@ Authentication token to identify the user and check if they have permissions on 
 {% endapi-method-headers %}
 
 {% api-method-body-parameters %}
-{% api-method-parameter name="from" type="string" required=true %}
-The ID of the user who is creating the channel.
-{% endapi-method-parameter %}
-
 {% api-method-parameter name="to" type="string" required=true %}
 The ID of the other user in the channel.
 {% endapi-method-parameter %}
@@ -231,6 +223,16 @@ The channel was successfully created. The 'channelCreate' event will also be emi
 {
     "channel_id": "1599079146709" // the id of the new channel
 }
+```
+{% endapi-method-response-example %}
+
+{% api-method-response-example httpCode=400 %}
+{% api-method-response-example-description %}
+You have not provided either who the channel is to, the channel type or an authorisation token.
+{% endapi-method-response-example-description %}
+
+```javascript
+null
 ```
 {% endapi-method-response-example %}
 
@@ -317,7 +319,7 @@ Returns an array of users. This is not guaranteed to be in the order they were r
 
 {% api-method-response-example httpCode=400 %}
 {% api-method-response-example-description %}
-You have provided an empty array of users or not provided the 'users' parameter at all.
+You have provided an empty array of users, not provided the 'users' parameter at all or not provided the authorisation token.
 {% endapi-method-response-example-description %}
 
 ```javascript
@@ -378,12 +380,8 @@ Authentication token to identify the user and check if they have permissions on 
 {% endapi-method-headers %}
 
 {% api-method-query-parameters %}
-{% api-method-parameter name="self\_id" type="string" required=true %}
-The ID of the user making the request.
-{% endapi-method-parameter %}
-
 {% api-method-parameter name="channel\_id" type="string" required=true %}
-The ID of the channel to fetch the messages from. Provide 'null' here if the user has no channels.
+The ID of the channel to fetch the messages from. Provide 'undefined' here if the user has no channels.
 {% endapi-method-parameter %}
 {% endapi-method-query-parameters %}
 {% endapi-method-request %}
@@ -457,7 +455,7 @@ The messages for the requested channel were found.
 
 {% api-method-response-example httpCode=400 %}
 {% api-method-response-example-description %}
-No channel ID was provided.
+No authorisation token was provided.
 {% endapi-method-response-example-description %}
 
 ```javascript
@@ -544,7 +542,7 @@ Returns the channels which were requested. They are not guaranteed to be in the 
 
 {% api-method-response-example httpCode=400 %}
 {% api-method-response-example-description %}
-No channel IDs were provided.
+No channel IDs were provided or an authorisation token was not provided.
 {% endapi-method-response-example-description %}
 
 ```javascript
@@ -598,7 +596,6 @@ Send structure:
 ```javascript
 {
     "content": "hello world", // the message content
-    "author": "1596544373547", // the id of the user who sent the message
     "channel": "1596546252413" // the id of the channel that the message was sent to
 }
 ```
