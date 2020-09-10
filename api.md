@@ -20,7 +20,7 @@ You will not receive any real-time messages or updates about the channels if you
 
 All examples below assume the 'Authorisation' token is being sent in the headers and that the base URL has been set.
 
-You must provide the 'Authorisation' token in the headers during the initial webhook connection, in the same way as endpoints. Connecting to the websocket will be successful even without a valid 'Authorisation' token, though you will simply not receive any events.
+You must provide the 'Authorisation' token in the headers during the initial websocket connection and any subsequent requests, in the same way as endpoints. Connecting to the websocket will be successful even without a valid 'Authorisation' token, though you will simply not receive any events.
 
 ## Endpoints
 
