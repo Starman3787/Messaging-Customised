@@ -30,7 +30,7 @@ New Session
 {% endapi-method-summary %}
 
 {% api-method-description %}
-This endpoint is used in order to create a new account, or login and fetch your account details and info including all your channels.
+This endpoint is used in order to create a new account, or login and fetch your account details, info \(including all your channels\), and a token.
 {% endapi-method-description %}
 
 {% api-method-spec %}
@@ -56,7 +56,7 @@ New account creared successfully.
 {
     "id": "1596544373547", // id of the user
     "dms": [], // ids of dm channels that the user is in
-    "token": "jO5Ob9NZvue9RG4-x-iEm1w8SDozfq_NBZvyOccpIsgS4V8OwTOIppQliD02hHq_Yw3pIZXH2YgM5y-Ig1k4vb-KB1rO0fIEW-223NeZRXZ8OAr-49Za4q4T99uEU_IMC1bkvNTKXolNQLhgD7wc8XquNh3-B4wMPUVHqjTNZzfirHqmG6NcedJRvlCDgnY2FOBZeTFrhHzyvFqI39huBc1GIlDjpiE9unyQ1cTrCmAqTNcNoVQcDaYqwV_QyMZi" // the authorisation token for this login session
+    "token": "jO5Ob9NZvue9RG4-x-iEm1w8SDozfq_NBZvyOccpIsgS4V8OwTOIppQliD02hHq_Yw3pIZXH2YgM5y-Ig1k4vb-KB1rO0fIEW-223NeZRXZ8OAr-49Za4q4T99uEU_IMC1bkvNTKXolNQLhgD7wc8XquNh3-B4wMPUVHqjTNZzfirHqmG6NcedJRvlCDgnY2FOBZeTFrhHzyvFqI39huBc1GIlDjpiE9unyQ1cTrCmAqTNcNoVQcDaYqwV_QyMZi" // the authorisation token
 }
 ```
 {% endapi-method-response-example %}
@@ -70,7 +70,7 @@ Login details are correct.
 {    
     "id": "1596544373547", // id of the user
     "dms": ["1599058363394","1599080295208"], // ids of dm channels that the user is in
-    "token": "jO5Ob9NZvue9RG4-x-iEm1w8SDozfq_NBZvyOccpIsgS4V8OwTOIppQliD02hHq_Yw3pIZXH2YgM5y-Ig1k4vb-KB1rO0fIEW-223NeZRXZ8OAr-49Za4q4T99uEU_IMC1bkvNTKXolNQLhgD7wc8XquNh3-B4wMPUVHqjTNZzfirHqmG6NcedJRvlCDgnY2FOBZeTFrhHzyvFqI39huBc1GIlDjpiE9unyQ1cTrCmAqTNcNoVQcDaYqwV_QyMZi" // the authorisation token for this login session
+    "token": "jO5Ob9NZvue9RG4-x-iEm1w8SDozfq_NBZvyOccpIsgS4V8OwTOIppQliD02hHq_Yw3pIZXH2YgM5y-Ig1k4vb-KB1rO0fIEW-223NeZRXZ8OAr-49Za4q4T99uEU_IMC1bkvNTKXolNQLhgD7wc8XquNh3-B4wMPUVHqjTNZzfirHqmG6NcedJRvlCDgnY2FOBZeTFrhHzyvFqI39huBc1GIlDjpiE9unyQ1cTrCmAqTNcNoVQcDaYqwV_QyMZi" // the authorisation token
 }
 ```
 {% endapi-method-response-example %}
